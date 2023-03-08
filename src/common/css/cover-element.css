@@ -1,0 +1,20 @@
+:root {
+  --el-menu-item-height: 42px;
+  --el-menu-base-level-padding: 20px;
+}
+
+.el-menu {
+  padding: 10px;
+  width: var(--sidebar-expansion_width);
+}
+
+.el-menu-item > span {
+  transition: none
+}
+
+@media screen and (min-width: 480px) and (max-width: 1170px) {
+  .el-menu {
+    padding: 10px;
+    width: var(--sidebar-fold_width);
+  }
+}

@@ -1,0 +1,90 @@
+.default-font-color {
+  color: rgb(var(--first-color));
+}
+
+.second-font-color {
+  color: rgb(var(--second-color));
+}
+
+.link-font-color {
+  color: rgb(var(--link-font-color))
+}
+
+.display {
+  &-flex {
+    display: flex;
+  }
+  &-none {
+    display: none;
+  }
+  &-inline-block {
+    display: inline-block;
+  }
+}
+
+.full {
+  &-height {
+    height: 100%;
+    &-important {
+      height: 100% !important;
+    }
+  }
+
+  &-width {
+    width: 100%;
+  }
+}
+
+.border-bottom-1 {
+  border-bottom: solid 1px rgb(var(--border-color));
+}
+
+@for $i from 12 through 42 {
+  .font-size-#{$i} {
+    font-size: #{$i}px;
+  }
+}
+
+@for $i from 1 through 10 {
+  .font-weight-#{$i * 100} {
+    font-weight: #{$i * 100};
+  }
+}
+
+@for $i from 40 through 200 {
+  .width-#{$i} {
+    width: #{$i}px;
+  }
+}
+
+@for $i from 10 through 30 {
+  .padding-#{$i} {
+    padding: #{$i}px;
+  }
+
+  .padding-top-#{$i} {
+    padding-top: #{$i}px;
+  }
+
+  .padding-bottom-#{$i} {
+    padding-bottom: #{$i}px;
+  }
+
+  .padding-left-#{$i} {
+    padding-left: #{$i}px;
+  }
+
+  .padding-right-#{$i} {
+    padding-right: #{$i}px;
+  }
+}
+
+@for $i from 10 through 80 {
+  .margin-right-#{$i} {
+    margin-right: #{$i}px;
+  }
+
+  .margin-bottom-#{$i} {
+    margin-bottom: #{$i}px;
+  }
+}

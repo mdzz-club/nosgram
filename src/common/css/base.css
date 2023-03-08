@@ -1,0 +1,44 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  touch-action: none;
+}
+
+body {
+  font-family: 'Microsoft Yahei', 'PingFang SC', 'Avenir', 'Segoe UI', 'Hiragino Sans GB', STHeiti, 'Microsoft Sans Serif', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+html, body, #app {
+  height: 100%;
+}
+
+ul, li {
+  list-style:none
+}
+
+a {
+  text-decoration: none;
+  color: rgba(var(--link-font-color, 0.5))
+}
+
+a:link {
+  text-decoration: none;
+  color: rgba(var(--link-font-color, 0.5))
+}
+
+a:visited {
+  text-decoration: none;
+  color: rgba(var(--link-font-color, 0.5))
+}
+
+a:hover {
+  text-decoration: none;
+  color: rgba(var(--link-font-color, 1))
+}
+
+a:active {
+  text-decoration: none;
+  color: rgba(var(--link-font-color, 1))
+}
