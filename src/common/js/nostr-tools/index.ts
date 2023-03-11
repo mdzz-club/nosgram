@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 16:07:10
+ * @LastEditTime: 2023-03-10 11:06:57
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -32,7 +32,7 @@ export const deDuplication = <
   n.forEach((e) => {
     let isAdd = true;
     o.some((ele) => {
-      if (ele.id === ele.id) {
+      if (ele.id === e.id) {
         isAdd = false;
         return true;
       } else return false;
@@ -166,7 +166,11 @@ export const mergeOriginData = (data: Record<string, unknown>) => {
   const keys = Object.keys(data);
   let result: unknown[] = [];
   keys.forEach((e) => {
-    result = result.concat(data[e]);
+    const newData = deDuplication(
+      result as { id: string }[],
+      data[e] as { id: string }[]
+    );
+    result = result.concat(newData);
   });
   return result;
 };

@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 15:13:44
+ * @LastEditTime: 2023-03-11 11:46:54
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -121,6 +121,8 @@ export default class Article extends Vue.with(ArticleProps) {
     this.source.client_fn_details(data);
   }
   _getRichText(source: Source, item: Record<string, string>) {
+    if (!source.client_tags) return item.index;
+    console.log(source, item.index, "----");
     const { type, content, id, tagsIndex } = source.client_tags?.[
       item.index
     ] as Client_tags;
@@ -181,6 +183,7 @@ export default class Article extends Vue.with(ArticleProps) {
     padding: 10px 10px 0px 10px;
     font-size: rgb(var(--article-size));
     word-break: break-all;
+    overflow: hidden;
     a {
       cursor: pointer;
       color: rgb(var(--link-font-color));

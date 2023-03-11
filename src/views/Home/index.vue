@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 21:06:22
+ * @LastEditTime: 2023-03-11 14:27:22
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -34,10 +34,10 @@
   ></div>
 </template>
 <script lang="ts">
-import type { Relay } from "@/common/js/relays/relays.d";
+// import type { Relay } from "@/common/js/relays/relays.d";
 import { Options, mixins } from "vue-class-component";
 import VirtualList from "vue3-virtual-scroll-list";
-import relays from "@/common/js/relays";
+// import relays from "@/common/js/relays";
 import AdditionalContent from "@/components/AdditionalContent/index.vue";
 import Article from "@/components/Article/index.vue";
 import ArticleSkeleton from "@/components/ArticleSkeleton/index.vue";
@@ -48,10 +48,10 @@ import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 import { deDuplication } from "@/common/js/nostr-tools/index";
 import type {
   mapOriginDataResult,
-  Client_tags,
   Client_userInfo,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import { random } from "@/common/js/common";
+import { nostrToolsModule } from "@/store/modules/nostr-tools";
 
 @Options({
   components: {
@@ -64,16 +64,15 @@ import { random } from "@/common/js/common";
 export default class Home extends mixins(NostrToolsMixins) {
   listData: any = [];
   ArticleComponent = Article;
-  defaultRelays = JSON.parse(JSON.stringify(relays)).map((e: Relay) => e.url);
+  // defaultRelays = JSON.parse(JSON.stringify(relays)).map((e: Relay) => e.url);
   loading = false;
   mediaHeight = 0;
   followerData: mapOriginDataResult[] = [];
-  pageCurrent = 0; // 页码，当下拉加载更多，将用该基数*10分钟，取当前时间往前的10分钟数据
-  pageUntil = ~~(Date.now() / 1000); // 上一次请求页码的时间
+  pageUntil = ~~(Date.now() / 1000); // 上一次请求最后一条数据的时间
   async mounted() {
     this._getMediaHeight();
 
-    this.ns_init(this.defaultRelays);
+    nostrToolsModule.ns_init(this.defaultRelays);
 
     this._getData();
   }
@@ -84,8 +83,6 @@ export default class Home extends mixins(NostrToolsMixins) {
     else return this.listData;
   }
   _init() {
-    this.pageCurrent = 0;
-    this.pageUntil = ~~(Date.now() / 1000);
     this._getData();
   }
   _dialogToggle(params: mapOriginDataResult) {
@@ -98,26 +95,32 @@ export default class Home extends mixins(NostrToolsMixins) {
     }, 0);
   }
   _handleToBottom() {
-    this.pageCurrent += 1;
     this._getData();
   }
   async _getActivity() {
-    const timeDiff = this.pageCurrent * 10 * 60000000;
-    const until = ~~(this.pageUntil - timeDiff);
     // 获取动态
-    await this.ns_send(this.defaultRelays, [
-      "REQ",
-      "user-activity",
-      {
-        kinds: [1],
-        until,
-        limit: 200,
-      },
-    ]);
-    const activityData: mapOriginDataResult[] = await this.ns_processingData();
+    const userActivityRandom = this.randomEventId("user-activity");
+    await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        userActivityRandom,
+        {
+          kinds: [1],
+          until: this.pageUntil,
+          limit: 200,
+        },
+      ],
+    });
+    const activityData: mapOriginDataResult[] =
+      await nostrToolsModule.ns_processingData(userActivityRandom);
     const newActivityData = deDuplication(
       this.listData,
-      activityData as { id: string; client_messageType: string }[]
+      activityData as {
+        id: string;
+        client_messageType: string;
+        created_at: number;
+      }[]
     );
     // 获取动态的对应的互动
     await this._getInteraction(activityData);
@@ -129,29 +132,36 @@ export default class Home extends mixins(NostrToolsMixins) {
         client_mediaHeight: this.mediaHeight,
         client_fn_details: this._dialogToggle,
       }));
+    this.pageUntil = this.listData[this.listData.length - 1]
+      .created_at as number;
     return activityData;
   }
   async _getUser(activityData: mapOriginDataResult[]) {
     // 获取动态对应用户的信息
-    await this.ns_send(this.defaultRelays, [
-      "REQ",
-      "user",
-      {
-        kinds: [0],
-        until: ~~(Date.now() / 1000),
-        limit: 1,
-        authors: [
-          ...new Set(
-            activityData
-              .filter(
-                (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
-              )
-              .map((e: mapOriginDataResult) => e.pubkey)
-          ),
-        ],
-      },
-    ]);
-    const userData: mapOriginDataResult[] = await this.ns_processingData();
+    const userRandom = this.randomEventId("user");
+    await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        userRandom,
+        {
+          kinds: [0],
+          until: ~~(Date.now() / 1000),
+          limit: 1,
+          authors: [
+            ...new Set(
+              activityData
+                .filter(
+                  (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
+                )
+                .map((e: mapOriginDataResult) => e.pubkey)
+            ),
+          ],
+        },
+      ],
+    });
+    const userData: mapOriginDataResult[] =
+      await nostrToolsModule.ns_processingData(userRandom);
     this.listData.forEach((item: mapOriginDataResult) => {
       userData.some((user) => {
         if (item.pubkey === user.pubkey) {
@@ -162,17 +172,23 @@ export default class Home extends mixins(NostrToolsMixins) {
     });
   }
   async _getLiks(author: string) {
-    await this.ns_send(this.defaultRelays, [
-      "REQ",
-      "user-liks",
-      {
-        until: ~~(Date.now() / 1000),
-        kinds: [1, 7],
-        limit: 1,
-        authors: [author],
-      },
-    ]);
-    const res: mapOriginDataResult[] = await this.ns_processingData();
+    const userLikesRandom = this.randomEventId("user-likes");
+    await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        userLikesRandom,
+        {
+          until: ~~(Date.now() / 1000),
+          kinds: [1, 7],
+          limit: 1,
+          authors: [author],
+        },
+      ],
+    });
+    const res: mapOriginDataResult[] = await nostrToolsModule.ns_processingData(
+      userLikesRandom
+    );
     const result = res.filter(
       (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
     );
@@ -202,80 +218,6 @@ export default class Home extends mixins(NostrToolsMixins) {
     };
     const authors = await getItem(activityData, []);
     this.followerData = authors;
-  }
-  // 获取动态中存在at的情况的真实用户信息
-  async _getInteraction(activityData: mapOriginDataResult[]) {
-    const author: string[] = [];
-    activityData.forEach((e) => {
-      if (e?.client_richTextIndex?.length && e?.tags?.length) {
-        const indexArr = e.client_richTextIndex;
-        const tags = e.tags;
-        const dic = (key: string) =>
-          ({ e: "forward", p: "user", t: "topic" }[key] || "");
-        indexArr.forEach((element) => {
-          const match = element.match(/#\[(\d+)\]/);
-          const index = match && match[1];
-          // #[数字]匹配方式
-          if (index !== null) {
-            const [key, value] = tags?.[parseInt(index)];
-            const obj = {
-              id: value,
-              type: dic(key),
-              tagsIndex: match?.[1],
-            };
-            // 给原数组添加索引
-            if (!e.client_tags) {
-              e.client_tags = {
-                [element]: obj,
-              };
-            } else e.client_tags[element] = obj;
-            // 添加到要请求的用户信息列表
-            author.push(value);
-          } else {
-            let index = null;
-            tags.some((e, i) => {
-              if (e[0] === "t" && e[1] === element.replace("#", "")) {
-                index = i;
-                return true;
-              } else return false;
-            });
-            const obj = {
-              id: element,
-              type: "topic",
-              tagsIndex: `${index}`,
-            };
-            if (!e.client_tags) {
-              e.client_tags = {
-                [element]: obj,
-              };
-            } else e.client_tags[element] = obj;
-          }
-        });
-      }
-    });
-    await this.ns_send(this.defaultRelays, [
-      "REQ",
-      "user",
-      {
-        kinds: [0],
-        until: ~~(Date.now() / 1000),
-        authors: [...new Set(author)],
-      },
-    ]);
-    const res: mapOriginDataResult[] = await this.ns_processingData();
-    activityData.forEach((e) => {
-      if (e.client_tags) {
-        const keys = Object.keys(e.client_tags);
-        keys.forEach((ele) => {
-          res.some((author) => {
-            const obj = (e.client_tags as Record<string, Client_tags>)[ele];
-            if (author.pubkey === obj.id) {
-              obj.content = author.content as Record<string, string>;
-            }
-          });
-        });
-      }
-    });
   }
   async _getData() {
     this.loading = true;

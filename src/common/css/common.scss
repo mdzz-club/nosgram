@@ -79,7 +79,7 @@
   }
 }
 
-@for $i from 10 through 80 {
+@for $i from 2 through 80 {
   .margin-right-#{$i} {
     margin-right: #{$i}px;
   }

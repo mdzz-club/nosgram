@@ -2,12 +2,16 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 20:40:08
+ * @LastEditTime: 2023-03-11 14:59:33
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <article class="details-container" :class="{ page: !isComponent }">
+  <article
+    class="details-container"
+    ref="details-container"
+    :class="{ page: !isComponent }"
+  >
     <div class="details-left" :class="{ 'all-rounded-corner': !mediaTotal }">
       <div class="left-top display-flex">
         <div class="logo">
@@ -30,7 +34,20 @@
           </el-button>
         </div>
       </div>
-      <div class="left-center"></div>
+      <div class="left-center">
+        <!-- {{ source }} -->
+        <div class="comment-component-container" :class="{ loading }">
+          <div class="full-width full-height" v-show="!loading">
+            <comment :emit="_emit" :source="commentData" />
+          </div>
+          <loading v-show="loading" />
+          <el-empty
+            :image-size="200"
+            description="暂无评论"
+            v-show="!loading && !commentData?.length"
+          />
+        </div>
+      </div>
       <div class="left-bottom display-flex">
         <div class="button-group">
           <el-tooltip effect="dark" content="评论">
@@ -56,14 +73,14 @@
           </el-tooltip>
         </div>
         <div class="display-flex create-time">
-          <p class="first-font-color font-size-14 margin-bottom-4">
+          <p class="first-font-color font-size-14 margin-bottom-3">
             {{ createdDate }}
           </p>
           <p class="second-font-color font-size-14">{{ createdTime }}</p>
         </div>
       </div>
     </div>
-    <div class="details-right" ref="details-right" v-if="mediaTotal">
+    <div class="details-right" v-if="mediaTotal">
       <article-media
         v-if="mediaHeight"
         :mediaHeight="mediaHeight"
@@ -77,39 +94,114 @@
 
 <script lang="ts">
 import Avatar from "vue-boring-avatars";
-import { Vue, Options, prop } from "vue-class-component";
+import { Options, mixins } from "vue-class-component";
+import { Prop } from "vue-property-decorator";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 import { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import ArticleMedia from "@/components/ArticleMedia/index.vue";
 import { getAuthor } from "@/common/js/nostr-tools/index";
 import { dayjs } from "element-plus";
+import { Watch } from "vue-property-decorator";
+import Comment from "@/components/Comment/index.vue";
+import { nostrToolsModule } from "@/store/modules/nostr-tools";
+import Loading from "@/components/loading/index.vue";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
-}
-
-class DetailsProps {
-  isComponent = prop<boolean>({ required: true, default: false });
-  source = prop<Source>({ required: false, default: {} });
+  client_children?: Source[];
+  client_moreComment?: number;
 }
 
 @Options({
-  mixins: [NostrToolsMixins],
   components: {
     Avatar,
     ArticleMedia,
+    Comment,
+    Loading,
   },
 })
-export default class Details extends Vue.with(DetailsProps) {
+export default class Details extends mixins(NostrToolsMixins) {
+  @Prop({ default: false }) isComponent!: boolean;
+  @Prop({ default: {} }) source!: Source;
   mediaHeight = 0;
-  mounted() {
+  commentData: mapOriginDataResult[] = [];
+  loading = false;
+  @Watch("source")
+  onSourceChanged() {
+    this._getComment();
+  }
+  async mounted() {
+    this._getComment();
     setTimeout(() => this._setMediaHeight(), 0);
+  }
+  _findItem(data: Source[], fineIndex: string[]): Source[] | Source {
+    const index = fineIndex.shift();
+    if (!index) return data;
+    if (fineIndex.length)
+      return this._findItem(
+        data[parseInt(index)].client_children as Source[],
+        fineIndex
+      );
+    else return data[parseInt(index)];
+  }
+  async _getComment(params?: Record<string, string>) {
+    const { id, index } = params || {};
+    const item = index
+      ? this._findItem(this.commentData, index.split("-"))
+      : {};
+    const detailsRandom = this.randomEventId("activity-comment");
+    if (!id) {
+      this.loading = true;
+    } else if (id && (item as Source).client_children) {
+      (item as Source).client_moreComment = 1;
+      return;
+    }
+    await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        detailsRandom,
+        {
+          kinds: [1],
+          until: ~~(Date.now() / 1000),
+          limit: 10,
+          "#e": [id || this.source.id],
+        },
+      ],
+    });
+    const commentData: mapOriginDataResult[] =
+      await nostrToolsModule.ns_processingData(detailsRandom);
+    // 获取动态的对应的互动
+    await this._getInteraction(commentData);
+    if (id) {
+      console.log(
+        "Object.prototype.toString.call(item)",
+        Object.prototype.toString.call(item)
+      );
+      if (Object.prototype.toString.call(item) !== "[object Array]") {
+        if (commentData?.length) {
+          (item as Source).client_moreComment = 1;
+          (item as Source).client_children = commentData;
+          console.log("---------------2", item);
+        } else {
+          (item as Source).client_moreComment = -1;
+          console.log("---------------1", item);
+        }
+      }
+      console.log(this.commentData, commentData, "---commentData--1", item);
+    } else {
+      this.loading = false;
+      this.commentData = commentData;
+      console.log(commentData, "---commentData--2");
+    }
   }
   _setMediaHeight() {
     this.mediaHeight = (
-      this.$refs["details-right"] as HTMLDivElement
+      this.$refs["details-container"] as HTMLDivElement
     ).offsetHeight;
-    console.log(this.mediaHeight);
+  }
+  _emit(params: mapOriginDataResult, index: string) {
+    this._getComment({ id: params.id as string, index });
   }
   // 创建时间，后面使用
   get createdDate() {
@@ -117,7 +209,6 @@ export default class Details extends Vue.with(DetailsProps) {
       return dayjs((this.source?.created_at as number) * 1000).format("M月D日");
     return ""; // 暂时写死，需要后续请求
   }
-
   get createdTime() {
     if (this.isComponent)
       return dayjs((this.source?.created_at as number) * 1000).format(
@@ -125,13 +216,12 @@ export default class Details extends Vue.with(DetailsProps) {
       );
     return ""; // 暂时写死，需要后续请求
   }
-
   get author() {
     return getAuthor(this.source);
   }
   get mediaTotal() {
     const photos = this.source?.client_photos?.length || 0;
-    const videos = this.source.client_videos?.length || 0;
+    const videos = this.source?.client_videos?.length || 0;
     if (this.isComponent) return photos + videos;
     return 0; // 暂时写死，需要后续请求
   }
@@ -139,6 +229,17 @@ export default class Details extends Vue.with(DetailsProps) {
 </script>
 
 <style lang="scss" scoped>
+.comment-component-container {
+  padding: 0 0 20px 0;
+  &.loading {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 .details-container {
   display: flex;
   justify-content: center;
@@ -193,6 +294,8 @@ export default class Details extends Vue.with(DetailsProps) {
         }
         &-center {
           height: calc(100% - 140px);
+          padding: 0 10px 0 20px;
+          overflow-y: auto;
         }
         &-bottom {
           justify-content: space-between;
