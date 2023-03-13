@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 11:46:54
+ * @LastEditTime: 2023-03-13 07:40:59
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -97,6 +97,7 @@ import type {
   Client_tags,
   mapOriginDataResult,
 } from "@/common/js/nostr-tools/nostr-tools.d";
+import { isPhone } from "@/common/js/common";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
@@ -118,6 +119,15 @@ class ArticleProps {
 })
 export default class Article extends Vue.with(ArticleProps) {
   _emit(type: string, data: Source) {
+    if (isPhone()) {
+      this.$router.push({
+        name: "details",
+        params: {
+          id: data.id,
+        },
+      });
+      return;
+    }
     this.source.client_fn_details(data);
   }
   _getRichText(source: Source, item: Record<string, string>) {

@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-24 17:04:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-02-28 14:51:08
+ * @LastEditTime: 2023-03-11 21:08:14
  * @FilePath: /nosgram/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -25,15 +25,21 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from "vue-class-component";
+import { Options, mixins } from "vue-class-component";
 import Sidebar from "@/components/container/Sidebar/index.vue";
+import NostrToolsMixins from "@/mixins/NostrToolsMixins";
+import { nostrToolsModule } from "@/store/modules/nostr-tools";
 
 @Options({
   components: {
     Sidebar,
   },
 })
-export default class App extends Vue {}
+export default class App extends mixins(NostrToolsMixins) {
+  mounted() {
+    nostrToolsModule.ns_init(this.defaultRelays);
+  }
+}
 </script>
 
 <style lang="scss">

@@ -29,12 +29,14 @@ declare module '@vue/runtime-core' {
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSkeletonItem: typeof import('element-plus/es')['ElSkeletonItem']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    IconIonArrowBack: typeof import('~icons/ion/arrow-back')['default']
     IconIonArrowRedoOutline: typeof import('~icons/ion/arrow-redo-outline')['default']
     IconIonChatbubbleEllipsesOutline: typeof import('~icons/ion/chatbubble-ellipses-outline')['default']
     IconIonDuplicateOutline: typeof import('~icons/ion/duplicate-outline')['default']
     IconIonHeartOutline: typeof import('~icons/ion/heart-outline')['default']
     IconIonHomeOutline: typeof import('~icons/ion/home-outline')['default']
     IconIonSettingsOutline: typeof import('~icons/ion/settings-outline')['default']
+    IconMajesticonsChevronDoubleDownLine: typeof import('~icons/majesticons/chevron-double-down-line')['default']
     IconMajesticonsThumbUpLine: typeof import('~icons/majesticons/thumb-up-line')['default']
     Loading: typeof import('./components/loading/index.vue')['default']
     MainContent: typeof import('./components/container/MainContent.vue')['default']
@@ -42,5 +44,8 @@ declare module '@vue/runtime-core' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./components/container/Sidebar/index.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

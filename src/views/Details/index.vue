@@ -2,36 +2,60 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 14:59:33
+ * @LastEditTime: 2023-03-13 11:19:59
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <article
+    v-loading="detailsLoading"
     class="details-container"
     ref="details-container"
     :class="{ page: !isComponent }"
   >
-    <div class="details-left" :class="{ 'all-rounded-corner': !mediaTotal }">
+    <div
+      class="details-left"
+      ref="details-left"
+      :class="{
+        'all-rounded-corner no-media': !mediaTotal,
+        media: mediaTotal,
+        'hide-comment': showComment,
+      }"
+    >
       <div class="left-top display-flex">
-        <div class="logo">
-          <avatar
-            v-if="!author.icon"
-            :size="48"
-            :name="author.iconName"
-            :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-          />
-          <img v-else :src="(author.icon as string)" alt="icon" />
+        <div class="left-top-info display-flex">
+          <div class="logo">
+            <avatar
+              v-if="!author.icon"
+              :size="48"
+              :name="author.iconName"
+              :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
+            />
+            <img v-else :src="(author.icon as string)" alt="icon" />
+            <div class="button-container" @click="showComment = !showComment">
+              <el-icon size="25" v-show="showComment"
+                ><icon-ion-chatbubble-ellipses-outline
+              /></el-icon>
+              <el-icon size="25" v-show="!showComment"
+                ><icon-majesticons-chevron-double-down-line
+              /></el-icon>
+            </div>
+          </div>
+          <div class="name">
+            <el-button link>
+              <span class="font-weight-600 font-size-16 default-font-color">{{
+                author.author
+              }}</span>
+            </el-button>
+            <el-button link type="primary">
+              <span class="font-size-14">关注</span>
+            </el-button>
+          </div>
         </div>
-        <div class="name">
-          <el-button link>
-            <span class="font-weight-600 font-size-16 default-font-color">{{
-              author.author
-            }}</span>
-          </el-button>
-          <el-button link type="primary">
-            <span class="font-size-14">关注</span>
-          </el-button>
+        <div class="left-top-button_group">
+          <el-button link @click="_back"
+            ><el-icon size="25"><icon-ion-arrow-back /></el-icon
+          ></el-button>
         </div>
       </div>
       <div class="left-center">
@@ -86,7 +110,7 @@
         :mediaHeight="mediaHeight"
         imgHeight="initial"
         imgWidth="100%"
-        :data="source"
+        :data="viewData"
       />
     </div>
   </article>
@@ -123,16 +147,46 @@ interface Source extends mapOriginDataResult {
 export default class Details extends mixins(NostrToolsMixins) {
   @Prop({ default: false }) isComponent!: boolean;
   @Prop({ default: {} }) source!: Source;
+  @Prop({ default: null }) closeDialog!: null | ((params: boolean) => void);
   mediaHeight = 0;
   commentData: mapOriginDataResult[] = [];
+  detailsSource: Source = {};
   loading = false;
+  detailsLoading = false;
+  showComment = false;
   @Watch("source")
   onSourceChanged() {
     this._getComment();
   }
   async mounted() {
-    this._getComment();
+    if (!this.isComponent) await this.getSource();
+    await this._getComment();
     setTimeout(() => this._setMediaHeight(), 0);
+  }
+  async getSource() {
+    const { params } = this.$route;
+    const { id } = params;
+    // 获取动态
+    this.detailsLoading = true;
+    const activityDetailsRandom = this.randomEventId("activity-details");
+    await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        activityDetailsRandom,
+        {
+          // kinds: [1],
+          // until: ~~(Date.now() / 1000),
+          // limit: 1,
+          // "#e": [id],
+          ids: [id],
+        },
+      ],
+    });
+    const activityDetailsData: mapOriginDataResult[] =
+      await nostrToolsModule.ns_processingData(activityDetailsRandom);
+    this.detailsSource = activityDetailsData[0];
+    this.detailsLoading = false;
   }
   _findItem(data: Source[], fineIndex: string[]): Source[] | Source {
     const index = fineIndex.shift();
@@ -165,7 +219,7 @@ export default class Details extends mixins(NostrToolsMixins) {
           kinds: [1],
           until: ~~(Date.now() / 1000),
           limit: 10,
-          "#e": [id || this.source.id],
+          "#e": [id || this.viewData.id],
         },
       ],
     });
@@ -197,33 +251,46 @@ export default class Details extends mixins(NostrToolsMixins) {
   }
   _setMediaHeight() {
     this.mediaHeight = (
-      this.$refs["details-container"] as HTMLDivElement
+      this.$refs[
+        this.isComponent ? "details-container" : "details-left"
+      ] as HTMLDivElement
     ).offsetHeight;
+  }
+  _back() {
+    if (this.closeDialog) return this.closeDialog(false);
+    else this.$router.back();
   }
   _emit(params: mapOriginDataResult, index: string) {
     this._getComment({ id: params.id as string, index });
   }
-  // 创建时间，后面使用
+  get viewData() {
+    const { name, params } = this.$route;
+    const { id } = params;
+    let result: Source = {};
+    if (name === "details" && id) {
+      result = this.detailsSource;
+    } else {
+      result = this.source;
+    }
+    return result;
+  }
   get createdDate() {
-    if (this.isComponent)
-      return dayjs((this.source?.created_at as number) * 1000).format("M月D日");
-    return ""; // 暂时写死，需要后续请求
+    if (!this.viewData?.created_at) return "";
+    return dayjs((this.viewData?.created_at as number) * 1000).format("M月D日");
   }
   get createdTime() {
-    if (this.isComponent)
-      return dayjs((this.source?.created_at as number) * 1000).format(
-        "HH:mm:ss"
-      );
-    return ""; // 暂时写死，需要后续请求
+    if (!this.viewData?.created_at) return "";
+    return dayjs((this.viewData?.created_at as number) * 1000).format(
+      "HH:mm:ss"
+    );
   }
   get author() {
-    return getAuthor(this.source);
+    return getAuthor(this.viewData);
   }
   get mediaTotal() {
-    const photos = this.source?.client_photos?.length || 0;
-    const videos = this.source?.client_videos?.length || 0;
-    if (this.isComponent) return photos + videos;
-    return 0; // 暂时写死，需要后续请求
+    const photos = this.viewData?.client_photos?.length || 0;
+    const videos = this.viewData?.client_videos?.length || 0;
+    return photos + videos;
   }
 }
 </script>
@@ -239,12 +306,12 @@ export default class Details extends mixins(NostrToolsMixins) {
     align-items: center;
   }
 }
-
 .details-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100%;
+  overflow: hidden;
   .details {
     &-left,
     &-right {
@@ -252,6 +319,8 @@ export default class Details extends mixins(NostrToolsMixins) {
       height: 100%;
     }
     &-left {
+      display: flex;
+      flex-direction: column;
       background: rgb(var(--details-bg));
       border-radius: 5px 0 0 5px;
       &.all-rounded-corner {
@@ -262,40 +331,82 @@ export default class Details extends mixins(NostrToolsMixins) {
           padding-left: 20px;
           height: 70px;
           border-bottom: solid 1px rgb(var(--border-color));
-          .name,
-          .logo {
-            margin-right: 12px;
-            img {
-              width: 35px;
-              height: 35px;
-              border-radius: 100%;
+          &-info {
+            .name,
+            .logo {
+              position: relative;
+              margin-right: 12px;
+              img {
+                width: 48px;
+                height: 48px;
+                border-radius: 100%;
+              }
             }
-          }
-          .name {
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            flex-direction: column;
-            line-height: 1em;
-            .el-button {
-              margin: 0;
-              padding: 0;
-              & + .el-button {
-                margin-top: 3px;
+            .name {
+              display: flex;
+              align-items: flex-start;
+              justify-content: center;
+              flex-direction: column;
+              line-height: 1em;
+              .el-button {
+                margin: 0;
+                padding: 0;
+                & + .el-button {
+                  margin-top: 3px;
+                }
+              }
+            }
+            .logo {
+              display: flex;
+              justify-items: center;
+              align-items: center;
+              & > .button-container {
+                width: 48px;
+                height: 48px;
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: 0;
+                margin: auto;
+                display: none;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                &::after,
+                &::before {
+                  content: "";
+                  display: block;
+                  width: 25px;
+                  height: 25px;
+                  position: absolute;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  top: 0;
+                  margin: auto;
+                }
+                &::after {
+                  border: 1px solid white;
+                  border-radius: 50%;
+                  animation: border-animation-outside 1s ease-out infinite;
+                }
+                &::before {
+                  border: 1px solid white;
+                  border-radius: 50%;
+                  animation: border-animation-inside 2s ease-out infinite;
+                }
               }
             }
           }
-
-          .logo {
-            display: flex;
-            justify-items: center;
-            align-items: center;
+          &-button_group {
+            display: none;
           }
         }
         &-center {
           height: calc(100% - 140px);
           padding: 0 10px 0 20px;
-          overflow-y: auto;
+          overflow-y: scroll;
         }
         &-bottom {
           justify-content: space-between;
@@ -325,8 +436,102 @@ export default class Details extends mixins(NostrToolsMixins) {
         max-height: var(--details-max-height);
       }
       &-left {
+        border: solid 1px rgb(var(--border-color));
       }
       &-right {
+      }
+    }
+  }
+}
+
+@keyframes border-animation-outside {
+  0% {
+    width: 25px;
+    height: 25px;
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    width: 48px;
+    height: 48px;
+    opacity: 0;
+  }
+}
+
+@keyframes border-animation-inside {
+  0% {
+    width: 25px;
+    height: 25px;
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    width: 48px;
+    height: 48px;
+    opacity: 0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .details {
+    &-container {
+      position: relative;
+      width: 100%;
+    }
+    &-left,
+    &-right {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      z-index: 1;
+    }
+    &-left {
+      border-radius: 10px 10px 0 0 !important;
+      z-index: 2;
+      &.no-media {
+        border-radius: 0 !important;
+        top: 0;
+      }
+      &.media {
+        top: 70px;
+        transition: all 0.3s;
+        &.hide-comment {
+          top: calc(100% - 70px);
+        }
+      }
+      .left {
+        &-top {
+          justify-content: space-between;
+          flex-direction: row-reverse;
+          &-info {
+            justify-content: space-between;
+            flex-direction: row-reverse;
+            .name {
+              align-items: flex-end !important;
+            }
+            .logo {
+              .button-container {
+                display: flex !important;
+              }
+            }
+          }
+          &-button_group {
+            display: flex !important;
+            align-items: center;
+          }
+        }
       }
     }
   }

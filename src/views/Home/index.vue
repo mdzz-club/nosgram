@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 14:27:22
+ * @LastEditTime: 2023-03-11 21:14:47
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -71,8 +71,6 @@ export default class Home extends mixins(NostrToolsMixins) {
   pageUntil = ~~(Date.now() / 1000); // 上一次请求最后一条数据的时间
   async mounted() {
     this._getMediaHeight();
-
-    nostrToolsModule.ns_init(this.defaultRelays);
 
     this._getData();
   }
@@ -224,7 +222,7 @@ export default class Home extends mixins(NostrToolsMixins) {
     // 获取用户动态
     const activityData = await this._getActivity();
     this.loading = false;
-    // 设置动态中用户的信息
+    // 设置动态中用户的信息！！！！这里还需要用本地存储把用户存储到本地，优化体验！！！！
     await this._getUser(activityData);
     console.log(this.listData);
     // 获取右侧额外内容
@@ -264,10 +262,9 @@ export default class Home extends mixins(NostrToolsMixins) {
 }
 
 .virtual-list {
-  overflow-y: auto;
+  overflow-y: scroll;
   height: 100%;
   width: 100%;
   padding: var(--content-container-padding);
-  -webkit-overflow-scrolling: touch;
 }
 </style>

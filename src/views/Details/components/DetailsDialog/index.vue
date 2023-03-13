@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:50:15
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 15:35:21
+ * @LastEditTime: 2023-03-11 23:37:28
  * @FilePath: /nosgram/src/views/Details/components/DetailsDialog/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -15,7 +15,11 @@
       align-center
       v-model="show"
     >
-      <details-page :source="itemData" :isComponent="true" />
+      <details-page
+        :closeDialog="_toggle"
+        :source="itemData"
+        :isComponent="true"
+      />
     </el-dialog>
   </div>
 </template>
@@ -58,6 +62,14 @@ export default class DetailsDialog extends Vue.with(DetailsDialogProps) {
     padding: 0;
     height: 100%;
     width: 100%;
+  }
+}
+@media screen and (max-width: 480px) {
+  :deep(.el-dialog) {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
   }
 }
 </style>
