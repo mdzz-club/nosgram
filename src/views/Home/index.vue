@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 21:14:47
+ * @LastEditTime: 2023-03-14 13:04:05
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -46,10 +46,7 @@ import DetailsDialog from "../Details/components/DetailsDialog/index.vue";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 
 import { deDuplication } from "@/common/js/nostr-tools/index";
-import type {
-  mapOriginDataResult,
-  Client_userInfo,
-} from "@/common/js/nostr-tools/nostr-tools.d";
+import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import { random } from "@/common/js/common";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
 
@@ -97,12 +94,11 @@ export default class Home extends mixins(NostrToolsMixins) {
   }
   async _getActivity() {
     // 获取动态
-    const userActivityRandom = this.randomEventId("user-activity");
-    await nostrToolsModule.ns_send({
+    const activityData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
         "REQ",
-        userActivityRandom,
+        this.randomEventId("user-activity"),
         {
           kinds: [1],
           until: this.pageUntil,
@@ -110,8 +106,6 @@ export default class Home extends mixins(NostrToolsMixins) {
         },
       ],
     });
-    const activityData: mapOriginDataResult[] =
-      await nostrToolsModule.ns_processingData(userActivityRandom);
     const newActivityData = deDuplication(
       this.listData,
       activityData as {
@@ -122,6 +116,8 @@ export default class Home extends mixins(NostrToolsMixins) {
     );
     // 获取动态的对应的互动
     await this._getInteraction(activityData);
+    // 获取文章中转发的内容
+    await this._getForward(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
@@ -134,48 +130,12 @@ export default class Home extends mixins(NostrToolsMixins) {
       .created_at as number;
     return activityData;
   }
-  async _getUser(activityData: mapOriginDataResult[]) {
-    // 获取动态对应用户的信息
-    const userRandom = this.randomEventId("user");
-    await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
-      params: [
-        "REQ",
-        userRandom,
-        {
-          kinds: [0],
-          until: ~~(Date.now() / 1000),
-          limit: 1,
-          authors: [
-            ...new Set(
-              activityData
-                .filter(
-                  (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
-                )
-                .map((e: mapOriginDataResult) => e.pubkey)
-            ),
-          ],
-        },
-      ],
-    });
-    const userData: mapOriginDataResult[] =
-      await nostrToolsModule.ns_processingData(userRandom);
-    this.listData.forEach((item: mapOriginDataResult) => {
-      userData.some((user) => {
-        if (item.pubkey === user.pubkey) {
-          item.client_userInfo = user as Client_userInfo;
-          return true;
-        } else return false;
-      });
-    });
-  }
   async _getLiks(author: string) {
-    const userLikesRandom = this.randomEventId("user-likes");
-    await nostrToolsModule.ns_send({
+    const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
         "REQ",
-        userLikesRandom,
+        this.randomEventId("user-likes"),
         {
           until: ~~(Date.now() / 1000),
           kinds: [1, 7],
@@ -184,9 +144,6 @@ export default class Home extends mixins(NostrToolsMixins) {
         },
       ],
     });
-    const res: mapOriginDataResult[] = await nostrToolsModule.ns_processingData(
-      userLikesRandom
-    );
     const result = res.filter(
       (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
     );

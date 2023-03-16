@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-10 09:33:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 15:03:04
+ * @LastEditTime: 2023-03-14 14:47:58
  * @FilePath: /nosgram/src/components/comment/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -35,30 +35,7 @@
         </el-button>
       </div>
       <div class="comment-content">
-        <!-- 普通文本输出 -->
-        <div
-          v-if="!item?.client_richTextIndex"
-          class="article-content"
-          v-dompurify-html="_articleContent(item)"
-        ></div>
-        <!-- 富文本内容输出 -->
-        <div v-else class="article-content">
-          <template
-            v-for="(richTextContent, index) in item.client_richTextContent"
-            :key="index"
-          >
-            <div
-              v-if="typeof richTextContent === 'string'"
-              class="display-inline-block"
-              v-dompurify-html="richTextContent"
-            ></div>
-            <template v-else>
-              <a>
-                {{ _getRichText(item, richTextContent) }}
-              </a>
-            </template>
-          </template>
-        </div>
+        <article-html :source="item" />
         <!-- 查看更多评论按钮 -->
         <el-button
           v-if="item.client_moreComment !== -1"
@@ -87,6 +64,7 @@
 <script lang="ts">
 import Avatar from "vue-boring-avatars";
 import { Vue, prop, Options } from "vue-class-component";
+import ArticleHtml from "../ArticleHtml/index.vue";
 import {
   mapOriginDataResult,
   Client_userInfo,
@@ -126,6 +104,7 @@ class CommentProps {
   name: "Comment",
   components: {
     Avatar,
+    ArticleHtml,
   },
 })
 export default class Comment extends Vue.with(CommentProps) {
@@ -163,8 +142,7 @@ export default class Comment extends Vue.with(CommentProps) {
     return item?.content ? item.content : "";
   }
   _getRichText(source: Source, item: Record<string, string>) {
-    if (!source.client_tags || source.client_tags?.[item.index])
-      return item.index;
+    if (!source?.client_tags?.[item.index]) return item.index;
     const { type, content, id, tagsIndex } = source.client_tags?.[
       item.index
     ] as Client_tags;

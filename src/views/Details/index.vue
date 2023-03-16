@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-13 11:19:59
+ * @LastEditTime: 2023-03-16 20:18:44
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -32,7 +32,11 @@
               :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
             />
             <img v-else :src="(author.icon as string)" alt="icon" />
-            <div class="button-container" @click="showComment = !showComment">
+            <div
+              class="button-container"
+              v-if="mediaTotal"
+              @click="showComment = !showComment"
+            >
               <el-icon size="25" v-show="showComment"
                 ><icon-ion-chatbubble-ellipses-outline
               /></el-icon>
@@ -72,35 +76,43 @@
           />
         </div>
       </div>
-      <div class="left-bottom display-flex">
+      <div class="left-bottom">
         <div class="button-group">
-          <el-tooltip effect="dark" content="评论">
-            <el-button link
-              ><el-icon size="25"
-                ><icon-ion-chatbubble-ellipses-outline /></el-icon
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip effect="dark" content="点赞">
-            <el-button link
-              ><el-icon size="25"><icon-ion-heart-outline /></el-icon
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip effect="dark" content="转发">
-            <el-button link
-              ><el-icon size="25"><icon-ion-arrow-redo-outline /></el-icon
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip effect="dark" content="收藏">
-            <el-button link
-              ><el-icon size="25"><icon-ion-duplicate-outline /></el-icon
-            ></el-button>
-          </el-tooltip>
+          <div>
+            <el-tooltip effect="dark" content="评论">
+              <el-button link
+                ><el-icon size="25"
+                  ><icon-ion-chatbubble-ellipses-outline /></el-icon
+              ></el-button>
+            </el-tooltip>
+            <el-tooltip effect="dark" content="点赞">
+              <el-button link
+                ><el-icon size="25"><icon-ion-heart-outline /></el-icon
+              ></el-button>
+            </el-tooltip>
+            <el-tooltip effect="dark" content="转发">
+              <el-button link
+                ><el-icon size="25"><icon-ion-arrow-redo-outline /></el-icon
+              ></el-button>
+            </el-tooltip>
+            <el-tooltip effect="dark" content="收藏">
+              <el-button link
+                ><el-icon size="25"><icon-ion-duplicate-outline /></el-icon
+              ></el-button>
+            </el-tooltip>
+          </div>
+          <div class="display-flex create-time">
+            <p class="first-font-color font-size-14 margin-bottom-3">
+              {{ createdDate }}
+            </p>
+            <p class="second-font-color font-size-14">{{ createdTime }}</p>
+          </div>
         </div>
-        <div class="display-flex create-time">
-          <p class="first-font-color font-size-14 margin-bottom-3">
-            {{ createdDate }}
-          </p>
-          <p class="second-font-color font-size-14">{{ createdTime }}</p>
+        <div class="full-width">
+          <chat-input-box
+            ref="chat-input-box"
+            @interaction-input="handleInteractionInput"
+          />
         </div>
       </div>
     </div>
@@ -111,6 +123,7 @@
         imgHeight="initial"
         imgWidth="100%"
         :data="viewData"
+        :arrow="isPhoneDevice ? 'always' : ''"
       />
     </div>
   </article>
@@ -129,6 +142,8 @@ import { Watch } from "vue-property-decorator";
 import Comment from "@/components/Comment/index.vue";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import Loading from "@/components/loading/index.vue";
+import { isPhone } from "@/common/js/common";
+import ChatInputBox from "@/components/ChatInputBox/index.vue";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
@@ -142,6 +157,7 @@ interface Source extends mapOriginDataResult {
     ArticleMedia,
     Comment,
     Loading,
+    ChatInputBox,
   },
 })
 export default class Details extends mixins(NostrToolsMixins) {
@@ -163,28 +179,46 @@ export default class Details extends mixins(NostrToolsMixins) {
     await this._getComment();
     setTimeout(() => this._setMediaHeight(), 0);
   }
+  async handleInteractionInput(params: Record<string, string>) {
+    setTimeout(
+      () =>
+        this.$refs["chat-input-box"].setInteractionData(
+          Array(10)
+            .fill({})
+            .map((e, i) => ({ key: `测试他吞吞吐吐-${i}`, value: `test-${i}` }))
+        ),
+      3000
+    );
+    // const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
+    //   url: this.defaultRelays,
+    //   params: [
+    //     "REQ",
+    //     this.randomEventId("interaction-input"),
+    //     {
+    //       ids: [id],
+    //     },
+    //   ],
+    // });
+  }
   async getSource() {
     const { params } = this.$route;
     const { id } = params;
     // 获取动态
     this.detailsLoading = true;
-    const activityDetailsRandom = this.randomEventId("activity-details");
-    await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
-      params: [
-        "REQ",
-        activityDetailsRandom,
-        {
-          // kinds: [1],
-          // until: ~~(Date.now() / 1000),
-          // limit: 1,
-          // "#e": [id],
-          ids: [id],
-        },
-      ],
-    });
+    // const activityDetailsRandom = this.randomEventId("activity-details");
     const activityDetailsData: mapOriginDataResult[] =
-      await nostrToolsModule.ns_processingData(activityDetailsRandom);
+      await nostrToolsModule.ns_send({
+        url: this.defaultRelays,
+        params: [
+          "REQ",
+          this.randomEventId("activity-details"),
+          {
+            ids: [id],
+          },
+        ],
+      });
+    // const activityDetailsData: mapOriginDataResult[] =
+    //   await nostrToolsModule.ns_processingData(activityDetailsRandom);
     this.detailsSource = activityDetailsData[0];
     this.detailsLoading = false;
   }
@@ -203,18 +237,18 @@ export default class Details extends mixins(NostrToolsMixins) {
     const item = index
       ? this._findItem(this.commentData, index.split("-"))
       : {};
-    const detailsRandom = this.randomEventId("activity-comment");
+    // const detailsRandom = this.randomEventId("activity-comment");
     if (!id) {
       this.loading = true;
     } else if (id && (item as Source).client_children) {
       (item as Source).client_moreComment = 1;
       return;
     }
-    await nostrToolsModule.ns_send({
+    const commentData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
         "REQ",
-        detailsRandom,
+        this.randomEventId("activity-comment"),
         {
           kinds: [1],
           until: ~~(Date.now() / 1000),
@@ -223,30 +257,22 @@ export default class Details extends mixins(NostrToolsMixins) {
         },
       ],
     });
-    const commentData: mapOriginDataResult[] =
-      await nostrToolsModule.ns_processingData(detailsRandom);
+    // const commentData: mapOriginDataResult[] =
+    //   await nostrToolsModule.ns_processingData(detailsRandom);
     // 获取动态的对应的互动
     await this._getInteraction(commentData);
     if (id) {
-      console.log(
-        "Object.prototype.toString.call(item)",
-        Object.prototype.toString.call(item)
-      );
       if (Object.prototype.toString.call(item) !== "[object Array]") {
         if (commentData?.length) {
           (item as Source).client_moreComment = 1;
           (item as Source).client_children = commentData;
-          console.log("---------------2", item);
         } else {
           (item as Source).client_moreComment = -1;
-          console.log("---------------1", item);
         }
       }
-      console.log(this.commentData, commentData, "---commentData--1", item);
     } else {
       this.loading = false;
       this.commentData = commentData;
-      console.log(commentData, "---commentData--2");
     }
   }
   _setMediaHeight() {
@@ -262,6 +288,9 @@ export default class Details extends mixins(NostrToolsMixins) {
   }
   _emit(params: mapOriginDataResult, index: string) {
     this._getComment({ id: params.id as string, index });
+  }
+  get isPhoneDevice() {
+    return isPhone();
   }
   get viewData() {
     const { name, params } = this.$route;
@@ -296,6 +325,7 @@ export default class Details extends mixins(NostrToolsMixins) {
 </script>
 
 <style lang="scss" scoped>
+$author_height: 70px;
 .comment-component-container {
   padding: 0 0 20px 0;
   &.loading {
@@ -323,13 +353,14 @@ export default class Details extends mixins(NostrToolsMixins) {
       flex-direction: column;
       background: rgb(var(--details-bg));
       border-radius: 5px 0 0 5px;
+      position: relative;
       &.all-rounded-corner {
         border-radius: 5px;
       }
       .left {
         &-top {
           padding-left: 20px;
-          height: 70px;
+          min-height: $author_height;
           border-bottom: solid 1px rgb(var(--border-color));
           &-info {
             .name,
@@ -361,6 +392,7 @@ export default class Details extends mixins(NostrToolsMixins) {
               justify-items: center;
               align-items: center;
               & > .button-container {
+                // filter: blur(15px);
                 width: 48px;
                 height: 48px;
                 position: absolute;
@@ -372,6 +404,7 @@ export default class Details extends mixins(NostrToolsMixins) {
                 display: none;
                 justify-content: center;
                 align-items: center;
+                background: rgba(255, 255, 255, 0.2);
                 color: white;
                 &::after,
                 &::before {
@@ -404,17 +437,35 @@ export default class Details extends mixins(NostrToolsMixins) {
           }
         }
         &-center {
-          height: calc(100% - 140px);
+          height: calc(100% - $author_height);
           padding: 0 10px 0 20px;
           overflow-y: scroll;
+          margin-bottom: 120px;
         }
         &-bottom {
-          justify-content: space-between;
+          position: absolute;
+          background: white;
+          width: 100%;
+          left: 0;
+          bottom: 0;
           border-top: solid 1px rgb(var(--border-color));
-          align-items: center;
           line-height: 1em;
-          padding: 0 20px;
-          height: 70px;
+          // padding: 10px 20px;
+          padding-top: 10px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 20px;
+            & + * {
+              margin-top: 10px;
+            }
+          }
           .create-time {
             flex-direction: column;
             align-items: flex-end;
@@ -481,6 +532,11 @@ export default class Details extends mixins(NostrToolsMixins) {
 }
 
 @media screen and (max-width: 480px) {
+  :deep(.el-carousel__indicators--horizontal) {
+    bottom: initial;
+    top: 0;
+  }
+
   .details {
     &-container {
       position: relative;
@@ -505,10 +561,18 @@ export default class Details extends mixins(NostrToolsMixins) {
         top: 0;
       }
       &.media {
-        top: 70px;
+        top: $author_height;
         transition: all 0.3s;
         &.hide-comment {
-          top: calc(100% - 70px);
+          top: calc(100% - $author_height);
+        }
+        .left {
+          &-center {
+            margin-bottom: 200px;
+          }
+          &-bottom {
+            transform: translateY(-$author_height);
+          }
         }
       }
       .left {

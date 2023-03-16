@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-28 18:39:26
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 15:51:42
+ * @LastEditTime: 2023-03-14 11:02:44
  * @FilePath: /nosgram/src/views/Home/components/ArticleMedia/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -17,7 +17,7 @@
       :height="`${mediaHeight || data.client_mediaHeight}px`"
       class="media"
       :indicator-position="mediaTotal < 2 ? 'none' : ''"
-      :arrow="mediaTotal > 1 ? 'hover' : 'never'"
+      :arrow="arrowConfig"
       :autoplay="false"
       trigger="click"
     >
@@ -61,6 +61,7 @@ class ArticleMediaProps {
   mediaHeight = prop<number>({ required: false, default: 0 });
   imgWidth = prop<string>({ required: false, default: "initial" });
   imgHeight = prop<string>({ required: false, default: "100%" });
+  arrow = prop<string>({ required: false, default: "" });
 }
 
 @Options({
@@ -71,6 +72,10 @@ class ArticleMediaProps {
   },
 })
 export default class ArticleMedia extends Vue.with(ArticleMediaProps) {
+  get arrowConfig() {
+    const result = this.arrow || (this.mediaTotal > 1 ? "hover" : "never");
+    return result;
+  }
   get links() {
     // <!-- tip：由于需要后端配合，暂时不调用 -->
     return [];

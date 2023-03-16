@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-13 07:40:59
+ * @LastEditTime: 2023-03-16 21:29:22
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -12,30 +12,11 @@
       <article-media :data="source" />
     </div>
     <div class="article-bottom">
-      <!-- 普通文本输出 -->
-      <div
-        v-if="!source?.client_richTextIndex"
-        class="article-content"
-        v-dompurify-html="articleContent"
-      ></div>
-      <!-- 富文本内容输出 -->
-      <div v-else class="article-content">
-        <template
-          v-for="(item, index) in source.client_richTextContent"
-          :key="index"
-        >
-          <div
-            v-if="typeof item === 'string'"
-            class="display-inline-block"
-            v-dompurify-html="item"
-          ></div>
-          <template v-else>
-            <a>
-              {{ _getRichText(source, item) }}
-            </a>
-          </template>
-        </template>
-      </div>
+      <article-html :source="source" />
+      <!-- 转发 -->
+      <template v-if="forward.length">
+        <article-forward :key="i" v-for="(f, i) in forward" :source="f" />
+      </template>
       <div class="article-button_Group">
         <div class="article-button_Group-left">
           <div class="logo">
@@ -85,13 +66,11 @@
 import { Vue, Options, prop } from "vue-class-component";
 import ArticleVideo from "../ArticleVideo/index.vue";
 import ArticleMedia from "../ArticleMedia/index.vue";
+import ArticleForward from "../ArticleForward/index.vue";
+import ArticleHtml from "../ArticleHtml/index.vue";
 import Avatar from "vue-boring-avatars";
 import Loading from "@/components/loading/index.vue";
-import {
-  getAuthor,
-  getAuthorIdName,
-  resetTime,
-} from "@/common/js/nostr-tools/index";
+import { getAuthor, resetTime } from "@/common/js/nostr-tools/index";
 import type {
   Client_userInfo,
   Client_tags,
@@ -115,6 +94,8 @@ class ArticleProps {
     ArticleVideo,
     ArticleMedia,
     Loading,
+    ArticleHtml,
+    ArticleForward,
   },
 })
 export default class Article extends Vue.with(ArticleProps) {
@@ -130,32 +111,20 @@ export default class Article extends Vue.with(ArticleProps) {
     }
     this.source.client_fn_details(data);
   }
-  _getRichText(source: Source, item: Record<string, string>) {
-    if (!source.client_tags) return item.index;
-    console.log(source, item.index, "----");
-    const { type, content, id, tagsIndex } = source.client_tags?.[
-      item.index
-    ] as Client_tags;
-    let result = "";
-    if (type === "user") {
-      if (content)
-        result = content.display_name || content.displayName || content.name;
-      else result = getAuthorIdName(id);
-      result = `@${result}`;
-    } else if (type === "topic") {
-      result = `#${
-        (source.tags as string[][])[parseInt(tagsIndex as string)][1]
-      }`;
-    }
+
+  get forward() {
+    const result: Client_tags[] = [];
+    const { client_tags } = this.source;
+    if (!client_tags) return result;
+    const keys = Object.keys(client_tags);
+    keys.forEach((ele) => {
+      if (client_tags[ele].type === "forward") result.push(client_tags[ele]);
+    });
     return result;
   }
 
   get isLoadingItem() {
     return this.source.id === "client_virtualList_loading";
-  }
-
-  get articleContent() {
-    return this.source?.content ? this.source?.content : "";
   }
 
   get createdTime() {
@@ -180,6 +149,7 @@ export default class Article extends Vue.with(ArticleProps) {
 }
 
 .article {
+  overflow: hidden;
   border: var(--content-border);
   border-radius: 3px;
   margin: auto auto 10px auto;

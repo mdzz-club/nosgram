@@ -10,6 +10,35 @@
   color: rgb(var(--link-font-color))
 }
 
+.position{
+  &-relative {
+    position: relative;
+  }
+  &-absolute {
+    position: absolute;
+  }
+}
+
+.align-right {
+  text-align: right;
+}
+.align-left {
+  text-align: left;
+}
+.align-center {
+  text-align: center;
+}
+
+.font-first-color{
+  color: rgb(var(--first-color));
+}
+.font-second-color{
+  color: rgb(var(--second-color));
+}
+.font-third-color{
+  color: rgb(var(--third-color));
+}
+
 .display {
   &-flex {
     display: flex;
@@ -20,6 +49,10 @@
   &-inline-block {
     display: inline-block;
   }
+}
+
+.align-items-center {
+  align-items: center;
 }
 
 .full {
@@ -82,6 +115,10 @@
 @for $i from 2 through 80 {
   .margin-right-#{$i} {
     margin-right: #{$i}px;
+  }
+
+  .margin-left-#{$i} {
+    margin-left: #{$i}px;
   }
 
   .margin-bottom-#{$i} {

@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-10 11:06:57
+ * @LastEditTime: 2023-03-13 22:50:04
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -15,11 +15,30 @@ enum mapOriginDataType {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+// const iterator = require("markdown-it-for-inline");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const mdIt = require("markdown-it")({
   html: true,
   linkify: true,
   typographer: true,
 });
+// // 防止xss攻击，暂时禁用target属性
+// mdIt.use(
+//   iterator,
+//   "url_new_win",
+//   "link_open",
+//   function (
+//     tokens: Record<string, (params: string | string[]) => string>[],
+//     idx: number
+//   ) {
+//     const hrefAttr = tokens[idx].attrGet("href");
+
+//     if (/^https?/.test(hrefAttr)) {
+//       tokens[idx].attrPush(["target", "_blank"]);
+//       tokens[idx].attrPush(["rel", "noopener"]);
+//     }
+//   }
+// );
 
 export const deDuplication = <
   T extends { id: string },
@@ -151,6 +170,7 @@ export const mapOriginData = (
           }
           if (links?.length)
             result.client_links = links.map((e: string) => mapALabelLink(e));
+          // !!!!!需要定位2个问题，有时候有图片链接不识别
           result.content = md;
         }
       }

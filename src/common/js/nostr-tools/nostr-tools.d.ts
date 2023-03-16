@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 10:53:45
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-10 21:43:51
+ * @LastEditTime: 2023-03-14 10:42:06
  * @FilePath: /nosgram/src/common/js/nostr-tools/nostr-tools.d.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,7 @@ export interface Client_tags {
   content?: Record<string, string>;
   type?: string;
   tagsIndex?: string;
+  client_forward?: mapOriginDataResult;
 }
 
 export interface Client_likes {

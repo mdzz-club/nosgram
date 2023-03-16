@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 13:53:11
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-10 12:41:49
+ * @LastEditTime: 2023-03-14 14:15:50
  * @FilePath: /nosgram/src/mixins/nostrToolsMixins.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -10,6 +10,7 @@ import { Vue } from "vue-class-component";
 import type {
   mapOriginDataResult,
   Client_tags,
+  Client_userInfo,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import type { Relay } from "@/common/js/relays/relays.d";
 import relays from "@/common/js/relays";
@@ -68,12 +69,11 @@ export default class nostrToolsMixins extends Vue {
         });
       }
     });
-    const interactionRandom = this.randomEventId("interaction");
-    await nostrToolsModule.ns_send({
+    const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
         "REQ",
-        interactionRandom,
+        this.randomEventId("interaction"),
         {
           kinds: [0],
           until: ~~(Date.now() / 1000),
@@ -81,9 +81,6 @@ export default class nostrToolsMixins extends Vue {
         },
       ],
     });
-    const res: mapOriginDataResult[] = await nostrToolsModule.ns_processingData(
-      interactionRandom
-    );
     activityData.forEach((e) => {
       if (e.client_tags) {
         const keys = Object.keys(e.client_tags);
@@ -97,5 +94,88 @@ export default class nostrToolsMixins extends Vue {
         });
       }
     });
+  }
+  async _getUser(activityData: mapOriginDataResult[]) {
+    // 获取动态对应用户的信息
+    // const userRandom = this.randomEventId("user");
+    const userData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        this.randomEventId("user"),
+        {
+          kinds: [0],
+          until: ~~(Date.now() / 1000),
+          limit: 1,
+          authors: [
+            ...new Set(
+              activityData
+                .filter(
+                  (e: mapOriginDataResult) => e.client_messageType !== "EOSE"
+                )
+                .map((e: mapOriginDataResult) => e.pubkey)
+            ),
+          ],
+        },
+      ],
+    });
+    this.listData.forEach((item: mapOriginDataResult) => {
+      userData.some((user) => {
+        if (item.pubkey === user.pubkey) {
+          item.client_userInfo = user as Client_userInfo;
+          return true;
+        } else return false;
+      });
+    });
+  }
+  // 获取转发内容
+  async _getForward(activityData: mapOriginDataResult[]) {
+    const ids: string[] = [];
+    activityData.forEach((e) => {
+      if (e.client_tags) {
+        const keys = Object.keys(e.client_tags);
+        keys.forEach((ele) => {
+          const { type, id } = (e.client_tags as Record<string, Client_tags>)[
+            ele
+          ];
+          if (type === "forward") ids.push(id);
+        });
+      }
+    });
+    // 获取转发的具体文章信息
+    const forward: mapOriginDataResult[] = await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        this.randomEventId("forward"),
+        {
+          ids: [...new Set(ids)],
+        },
+      ],
+    });
+    // 获取动态对应的互动
+    await this._getInteraction(forward);
+    // 获取转发的具体用户信息
+    await this._getUser(forward);
+    if (forward?.length) {
+      activityData.forEach((e) => {
+        if (e.client_tags) {
+          const keys = Object.keys(e.client_tags);
+          keys.forEach((ele) => {
+            const clinetTag = (e.client_tags as Record<string, Client_tags>)[
+              ele
+            ];
+            const { type, id } = clinetTag;
+            if (type !== "forward") return;
+            forward.some((item) => {
+              if (id === item.id) {
+                clinetTag.client_forward = item;
+                return true;
+              } else return false;
+            });
+          });
+        }
+      });
+    }
   }
 }

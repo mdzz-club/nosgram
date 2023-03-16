@@ -4,7 +4,7 @@ import type { WS, Params } from "./websocket.d";
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 19:11:13
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 15:10:32
+ * @LastEditTime: 2023-03-15 21:23:54
  * @FilePath: /nosgram/src/common/js/websocket/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -28,7 +28,7 @@ export default class ws {
     if (ws?.readyState === ws?.OPEN) return true;
     else {
       // 若还没连接完成，等待1秒
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.send(data, ws);
       }, 1000);
       return false;
@@ -78,7 +78,7 @@ export default class ws {
     if (this.websocket[index].connected) {
       return;
     }
-    this.websocket[index].timeout = setTimeout(() => {
+    this.websocket[index].timeout = window.setTimeout(() => {
       this._createWebSocket(url, index, true);
     }, this.interval * 1000);
   }

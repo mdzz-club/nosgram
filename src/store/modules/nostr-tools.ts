@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-11 14:16:25
+ * @LastEditTime: 2023-03-15 21:23:41
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,7 @@ import store from "../index";
 import { wsModule } from "@/store/modules/ws";
 import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import { mapOriginData, mergeOriginData } from "@/common/js/nostr-tools/index";
+import { TIMEOUT_TIMES } from "@/common/js/http/config";
 
 // interface SendParams {
 //   kinds?: number[];
@@ -79,10 +80,10 @@ class NostrToolsModule extends VuexModule {
   @Mutation
   ns_clearPoolsInterval() {
     if (this.clearInterval) return;
-    this.clearInterval = setInterval(() => {
+    this.clearInterval = window.setInterval(() => {
       const keys = Object.keys(this.pools);
       keys.forEach((e) => this.clearPool(e));
-    }, 20000);
+    }, TIMEOUT_TIMES);
   }
 
   @Action
@@ -115,7 +116,7 @@ class NostrToolsModule extends VuexModule {
     if ((params as Record<string, string>)?.data?.[0] === "EOSE") {
       this.ns_unsubscribe({ url: origin, closeId: eventId });
     }
-    this.pools[eventId].ns_timeout[origin] = setTimeout(
+    this.pools[eventId].ns_timeout[origin] = window.setTimeout(
       () => this.ns_unsubscribe({ url: origin, closeId: eventId }),
       1000
     );
@@ -165,7 +166,7 @@ class NostrToolsModule extends VuexModule {
       this.pools[eventId].ns_wait_timeout[urlIndex || "all"] = undefined;
       return resolve([]);
     }
-    this.pools[eventId].ns_wait_timeout[urlIndex || "all"] = setTimeout(
+    this.pools[eventId].ns_wait_timeout[urlIndex || "all"] = window.setTimeout(
       () =>
         this.ns_wait({
           eventId,
@@ -185,7 +186,7 @@ class NostrToolsModule extends VuexModule {
     });
   }
 
-  // 调用ns_getData后，直接调用该方法，处理目前该mixins数据池的数据
+  // 获取指定eventId的数据池，使用时请注意数据时效【定期会清理线程池】
   @Action
   async ns_processingData(eventId: string): Promise<mapOriginDataResult[]> {
     const result = await this.ns_getData({ eventId });
@@ -214,11 +215,12 @@ class NostrToolsModule extends VuexModule {
         params,
       });
     });
-    return new Promise((resolve) => {
-      if (typeof url === "string")
-        this.ns_wait({ eventId, resolve, urlIndex: url });
-      else resolve(false);
-    });
+    return this.ns_processingData(eventId);
+    // return new Promise((resolve) => {
+    //   if (typeof url === "string")
+    //     this.ns_wait({ eventId, resolve, urlIndex: url });
+    //   else resolve(false);
+    // });
   }
 }
 
