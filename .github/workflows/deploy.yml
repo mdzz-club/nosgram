@@ -1,0 +1,29 @@
+on:
+  push:
+    branches:
+      - main
+      
+jobs:
+  ci:
+    name: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 19
+    - name: npm install and build
+      run: |
+        npm i
+        npm run build
+    - name: Publish to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ secrets.CF_TOKEN }}
+        accountId: 9532d53b0fa33d8214edf16b409c423f
+        projectName: nosdev
+        directory: dist
+        # Optional: Enable this if you want to have GitHub Deployments triggered
+        # gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      
