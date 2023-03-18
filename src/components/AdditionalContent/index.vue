@@ -2,59 +2,75 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:53
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-08 09:23:04
+ * @LastEditTime: 2023-03-18 20:44:50
  * @FilePath: /nosgram/src/views/Home/components/FollowerList/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <div class="additional_content_list-container">
-    <div class="additional_content-item display-flex">
-      <div class="item-left display-flex">
-        <div class="logo display-flex">
-          <avatar
-            :size="60"
-            name="icon"
-            :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-          />
-        </div>
-        <div class="info display-flex">
-          <p class="font-size-18 font-weight-600 default-font-color">unhum</p>
-          <p class="font-size-14 second-font-color">一级徽章</p>
-        </div>
+  <div class="additional-container">
+    <!-- v-if="loginModule.isLogin" -->
+    <div class="position-relative">
+      <!-- :name="userName" -->
+      <div :class="{ 'filter-blur-10': !loginModule.isLogin }">
+        <author-info
+          avatarWidth="60"
+          avatarHeight="60"
+          :source="userSource"
+          userInfoKey="details"
+          :isShowCreateTime="false"
+          padding="10px 0"
+        >
+          <p class="font-size-14 second-font-color margin-top-10">
+            稀有内侧徽章/一级徽章
+          </p>
+          <template #right>
+            <el-button
+              link
+              class="font-size-16 font-weight-600"
+              @click="loginModule.logout"
+            >
+              登出
+            </el-button>
+          </template>
+          <template #name v-if="loginModule.loadUserInfo">
+            <el-tooltip content="为您加载详细资料中" placement="bottom-end">
+              <loading class="margin-left-10" size="15px" />
+            </el-tooltip>
+          </template>
+        </author-info>
       </div>
-      <div class="item-right link-font-color font-weight-600">登出</div>
+      <el-button
+        v-show="!loginModule.isLogin"
+        class="left-0 right-0 bottom-0 top-0 margin-auto position-absolute width-100"
+        type="primary"
+        @click="loginModule.toggle(true)"
+        >登录/注册</el-button
+      >
     </div>
+
     <div
       class="second-font-color font-weight-600 font-size-16 padding-top-10 padding-bottom-10"
     >
       他/她的动态
     </div>
-    <div
-      class="additional_content-item display-flex"
+    <author-info
+      avatarWidth="38"
+      avatarHeight="38"
+      :source="item"
+      :isShowCreateTime="false"
+      padding="10px 0"
       v-for="(item, i) in data"
       :key="i"
     >
-      <div class="item-left small display-flex">
-        <div class="logo display-flex">
-          <avatar
-            v-if="!_author(item).icon"
-            :size="38"
-            :name="_author(item).iconName"
-            :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-          />
-          <img v-else :src="(_author(item).icon as string)" alt="icon" />
-        </div>
-        <div class="info display-flex">
-          <p class="font-size-18 font-weight-600 default-font-color">
-            {{ _author(item).author }}
-          </p>
-          <p class="font-size-14 second-font-color">
-            {{ _authorActivity(item.client_likes as Client_likes[]) }}
-          </p>
-        </div>
-      </div>
-      <div class="item-right link-font-color font-weight-600">围观</div>
-    </div>
+      <p class="font-size-14 second-font-color">
+        {{ _authorActivity(item.client_likes as Client_likes[]) }}
+      </p>
+      <template #right>
+        <el-button link @click="_to(item.id)">
+          <div class="cursor-poniter link-font-color font-weight-600">围观</div>
+        </el-button>
+      </template>
+    </author-info>
     <additional-content-skeleton v-show="!data?.length" />
   </div>
 </template>
@@ -67,6 +83,9 @@ import type {
   mapOriginDataResult,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import AdditionalContentSkeleton from "../AdditionalContentSkeleton/index.vue";
+import { AuthorInfo } from "@/components/Base/index";
+import { loginModule } from "@/store/modules/login";
+import Loading from "../loading/index.vue";
 
 class FollowerListProps {
   data = prop<mapOriginDataResult[]>({ required: true, default: [] });
@@ -75,72 +94,33 @@ class FollowerListProps {
 @Options({
   components: {
     Avatar,
+    AuthorInfo,
     AdditionalContentSkeleton,
+    Loading,
   },
 })
 export default class FollowerList extends Vue.with(FollowerListProps) {
+  loginModule = loginModule;
   get isLogin() {
     return false;
   }
+  _to(id: string) {
+    this.$router.push({ name: "details", params: { id } });
+  }
   _authorActivity(params: Client_likes[]) {
-    // 刚刚点赞了一位AV女优的动态
     if (params[0].kind === 1) return "刚刚发布了一条动态";
     else if (params[0].kind === 7) return "刚刚点赞了一条动态";
   }
-  _author(item: mapOriginDataResult) {
-    const result: Record<string, string | undefined | number> = {};
-    result.icon = item?.client_userInfo?.content?.picture;
-    result.iconName = item?.pubkey;
-    result.author = item?.client_userInfo
-      ? item?.client_userInfo.content.display_name
-      : `${item?.pubkey?.slice(0, 4)}...${item?.pubkey?.slice(-4)}`;
+  get userSource() {
+    const { publicKey } = loginModule.userInfo;
+    const result = { ...loginModule.userInfo, pubkey: publicKey };
     return result;
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.additional_content_list-container {
+.additional-container {
   width: var(--content-additional_width);
-  .additional_content-item {
-    justify-content: space-between;
-    align-items: center;
-    .item-left {
-      align-items: center;
-      .logo {
-        width: 70px;
-        height: 70px;
-        margin-right: 12px;
-        align-items: center;
-
-        img {
-          width: 38px;
-          height: 38px;
-          border-radius: 100%;
-        }
-      }
-      .info {
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 15px 0;
-      }
-      &.small {
-        .logo {
-          width: 45px;
-          height: 45px;
-          margin-right: 5px;
-        }
-        .info {
-          padding: 3px 0;
-        }
-      }
-    }
-    .item-right {
-      cursor: pointer;
-    }
-    & + .additional_content-item {
-      margin-top: 10px;
-    }
-  }
 }
 </style>

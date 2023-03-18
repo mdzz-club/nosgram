@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-14 13:04:05
+ * @LastEditTime: 2023-03-18 22:26:40
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -34,10 +34,8 @@
   ></div>
 </template>
 <script lang="ts">
-// import type { Relay } from "@/common/js/relays/relays.d";
 import { Options, mixins } from "vue-class-component";
 import VirtualList from "vue3-virtual-scroll-list";
-// import relays from "@/common/js/relays";
 import AdditionalContent from "@/components/AdditionalContent/index.vue";
 import Article from "@/components/Article/index.vue";
 import ArticleSkeleton from "@/components/ArticleSkeleton/index.vue";
@@ -49,6 +47,7 @@ import { deDuplication } from "@/common/js/nostr-tools/index";
 import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import { random } from "@/common/js/common";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
+import { loginModule } from "@/store/modules/login";
 
 @Options({
   components: {
@@ -61,7 +60,6 @@ import { nostrToolsModule } from "@/store/modules/nostr-tools";
 export default class Home extends mixins(NostrToolsMixins) {
   listData: any = [];
   ArticleComponent = Article;
-  // defaultRelays = JSON.parse(JSON.stringify(relays)).map((e: Relay) => e.url);
   loading = false;
   mediaHeight = 0;
   followerData: mapOriginDataResult[] = [];
@@ -69,7 +67,7 @@ export default class Home extends mixins(NostrToolsMixins) {
   async mounted() {
     this._getMediaHeight();
 
-    this._getData();
+    await this._init();
   }
   // 组装loading项，用于加载更多显示loading
   get virtualList() {
@@ -77,8 +75,10 @@ export default class Home extends mixins(NostrToolsMixins) {
       return this.listData.concat([{ id: "client_virtualList_loading" }]);
     else return this.listData;
   }
-  _init() {
-    this._getData();
+  async _init() {
+    await this._getData();
+    // 获取右侧额外内容
+    await this._getAdditionalContent(this.virtualList, 5);
   }
   _dialogToggle(params: mapOriginDataResult) {
     (this.$refs["details-dialog"] as DetailsDialog)._toggle(true, params);
@@ -90,6 +90,7 @@ export default class Home extends mixins(NostrToolsMixins) {
     }, 0);
   }
   _handleToBottom() {
+    if (this.loading) return;
     this._getData();
   }
   async _getActivity() {
@@ -102,7 +103,7 @@ export default class Home extends mixins(NostrToolsMixins) {
         {
           kinds: [1],
           until: this.pageUntil,
-          limit: 200,
+          limit: 50,
         },
       ],
     });
@@ -118,6 +119,8 @@ export default class Home extends mixins(NostrToolsMixins) {
     await this._getInteraction(activityData);
     // 获取文章中转发的内容
     await this._getForward(activityData);
+    // 获取文章的点赞信息，id
+    await this._getLikes(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
@@ -130,12 +133,12 @@ export default class Home extends mixins(NostrToolsMixins) {
       .created_at as number;
     return activityData;
   }
-  async _getLiks(author: string) {
+  async _getoOperation(author: string) {
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
         "REQ",
-        this.randomEventId("user-likes"),
+        this.randomEventId("user-operation"),
         {
           until: ~~(Date.now() / 1000),
           kinds: [1, 7],
@@ -166,8 +169,11 @@ export default class Home extends mixins(NostrToolsMixins) {
         } else return false;
       });
       if (!exists) {
-        item.client_likes = await this._getLiks(item.pubkey as string);
-        result.push(item);
+        const operation = await this._getoOperation(item.pubkey as string);
+        if (operation?.length) {
+          item.client_likes = operation;
+          result.push(item);
+        }
       }
       return getItem(origin, result);
     };
@@ -182,8 +188,6 @@ export default class Home extends mixins(NostrToolsMixins) {
     // 设置动态中用户的信息！！！！这里还需要用本地存储把用户存储到本地，优化体验！！！！
     await this._getUser(activityData);
     console.log(this.listData);
-    // 获取右侧额外内容
-    await this._getAdditionalContent(activityData, 5);
   }
 }
 </script>

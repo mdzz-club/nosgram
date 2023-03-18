@@ -2,50 +2,36 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-10 09:33:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-14 14:47:58
+ * @LastEditTime: 2023-03-17 20:48:35
  * @FilePath: /nosgram/src/components/comment/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="comment" v-for="(item, sourceIndex) in source" :key="item.id">
-    <div class="logo">
-      <avatar
-        v-if="!_author(item).icon"
-        :size="35"
-        :name="_author(item).iconName"
-        :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-      />
-      <img v-else :src="(_author(item).icon as string)" alt="icon" />
-    </div>
-    <div class="full-width">
-      <div class="name margin-bottom-5">
-        <div>
-          <el-button link>
-            <span
-              class="font-weight-600 margin-right-10 font-size-16 default-font-color"
-              >{{ _author(item).author }}</span
-            >
-          </el-button>
-          <span class="second-font-color font-weight-600 font-size-12">
-            {{ _createdTime(item) }}
-          </span>
-        </div>
-        <el-button link>
-          <el-icon size="14"><icon-majesticons-thumb-up-line /></el-icon>
-        </el-button>
-      </div>
+    <author-info
+      avatarVerticalAlign="top"
+      padding="0"
+      :source="item"
+      avatarWidth="35"
+      avatarHeight="35"
+    >
       <div class="comment-content">
-        <article-html :source="item" />
-        <!-- 查看更多评论按钮 -->
-        <el-button
-          v-if="item.client_moreComment !== -1"
-          :disabled="item.client_moreComment === 2"
-          @click="_emit(item, sourceIndex)"
-          class="comment-button"
-          link
-          >{{ _moreCommentButton(item) }}</el-button
-        >
-        <!-- 回复的评论 -->
+        <div class="position-relative padding-right-20">
+          <article-html :source="item" />
+          <el-button
+            v-if="item.client_moreComment !== -1"
+            :disabled="item.client_moreComment === 2"
+            @click="_emit(item, sourceIndex)"
+            class="comment-button"
+            link
+            >{{ _moreCommentButton(item) }}</el-button
+          >
+          <div class="like-container">
+            <el-button link>
+              <el-icon size="14"><icon-majesticons-thumb-up-line /></el-icon>
+            </el-button>
+          </div>
+        </div>
         <div v-show="item.client_moreComment === 1">
           <Comment
             v-if="item.client_children"
@@ -57,7 +43,7 @@
           />
         </div>
       </div>
-    </div>
+    </author-info>
   </div>
 </template>
 
@@ -69,12 +55,14 @@ import {
   mapOriginDataResult,
   Client_userInfo,
   Client_tags,
+  Author,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import {
   getAuthor,
   resetTime,
   getAuthorIdName,
 } from "@/common/js/nostr-tools/index";
+import { AuthorInfo } from "@/components/Base/index";
 
 enum Client_moreComment {
   remove = -1, // 移除查看回复按钮
@@ -105,6 +93,7 @@ class CommentProps {
   components: {
     Avatar,
     ArticleHtml,
+    AuthorInfo,
   },
 })
 export default class Comment extends Vue.with(CommentProps) {
@@ -132,7 +121,7 @@ export default class Comment extends Vue.with(CommentProps) {
       `${this.indexComment ? `${this.indexComment}-` : ""}${index}`
     );
   }
-  _author(item: Source) {
+  _author(item: Author) {
     return getAuthor(item);
   }
   _createdTime(item: number) {
@@ -163,9 +152,20 @@ export default class Comment extends Vue.with(CommentProps) {
 </script>
 
 <style lang="scss" scoped>
+.like-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
 .comment {
   padding-top: 20px;
   &-content {
+    width: 100%;
     .article-content {
       padding: 10px 10px 0px 10px;
       font-size: rgb(var(--article-size));

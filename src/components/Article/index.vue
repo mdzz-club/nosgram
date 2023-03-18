@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 21:29:22
+ * @LastEditTime: 2023-03-18 17:10:56
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -17,33 +17,17 @@
       <template v-if="forward.length">
         <article-forward :key="i" v-for="(f, i) in forward" :source="f" />
       </template>
-      <div class="article-button_Group">
-        <div class="article-button_Group-left">
-          <div class="logo">
-            <avatar
-              v-if="!author.icon"
-              :size="35"
-              :name="author.iconName"
-              :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-            />
-            <img v-else :src="(author.icon as string)" alt="icon" />
-          </div>
-          <div class="name">
-            <el-button link>
-              <span class="font-weight-600 font-size-16 default-font-color">{{
-                author.author
-              }}</span>
-            </el-button>
-            <el-button link type="primary">
-              <span class="font-size-14">关注</span>
-            </el-button>
-          </div>
-          <p class="second-font-color font-weight-600 font-size-12">
-            {{ createdTime }}
-          </p>
-        </div>
-        <div class="article-button_Group-right">
-          <el-button link @click="_emit('details-dialog', source)"
+      <!-- 用户信息 -->
+      <author-info :source="source">
+        <el-button class="margin-left-0-important" link type="primary">
+          <span class="font-size-14">关注</span>
+        </el-button>
+        <template #right>
+          <button-group
+            :source="source"
+            @comment-click="_emit('details-dialog', source)"
+          />
+          <!-- <el-button link
             ><el-icon size="20"
               ><icon-ion-chatbubble-ellipses-outline /></el-icon
           ></el-button>
@@ -52,9 +36,9 @@
           ></el-button>
           <el-button link
             ><el-icon size="20"><icon-ion-arrow-redo-outline /></el-icon
-          ></el-button>
-        </div>
-      </div>
+          ></el-button> -->
+        </template>
+      </author-info>
     </div>
   </article>
   <div class="loading-container" v-else>
@@ -68,19 +52,16 @@ import ArticleVideo from "../ArticleVideo/index.vue";
 import ArticleMedia from "../ArticleMedia/index.vue";
 import ArticleForward from "../ArticleForward/index.vue";
 import ArticleHtml from "../ArticleHtml/index.vue";
-import Avatar from "vue-boring-avatars";
 import Loading from "@/components/loading/index.vue";
-import { getAuthor, resetTime } from "@/common/js/nostr-tools/index";
+import { AuthorInfo } from "@/components/Base/index";
+import ButtonGroup from "@/components/Base/ButtonGroup/index.vue";
 import type {
-  Client_userInfo,
   Client_tags,
   mapOriginDataResult,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import { isPhone } from "@/common/js/common";
 
 interface Source extends mapOriginDataResult {
-  created_at?: number;
-  client_userInfo?: Client_userInfo;
   client_fn_details: (params: any) => void;
 }
 
@@ -90,12 +71,13 @@ class ArticleProps {
 
 @Options({
   components: {
-    Avatar,
     ArticleVideo,
     ArticleMedia,
     Loading,
     ArticleHtml,
     ArticleForward,
+    AuthorInfo,
+    ButtonGroup,
   },
 })
 export default class Article extends Vue.with(ArticleProps) {
@@ -125,14 +107,6 @@ export default class Article extends Vue.with(ArticleProps) {
 
   get isLoadingItem() {
     return this.source.id === "client_virtualList_loading";
-  }
-
-  get createdTime() {
-    return resetTime(this.source?.created_at);
-  }
-
-  get author() {
-    return getAuthor(this.source);
   }
 }
 </script>
@@ -187,31 +161,21 @@ export default class Article extends Vue.with(ArticleProps) {
     }
 
     &-left {
-      .name,
-      .logo {
-        margin-right: 12px;
-        img {
-          width: 35px;
-          height: 35px;
-          border-radius: 100%;
-        }
-      }
-
       .name {
         display: flex;
         align-items: flex-start;
         justify-content: center;
         flex-direction: column;
         line-height: 1em;
+        margin-right: 12px;
+        img {
+          width: 35px;
+          height: 35px;
+          border-radius: 100%;
+        }
         .el-button {
           margin-left: 0;
         }
-      }
-
-      .logo {
-        display: flex;
-        justify-items: center;
-        align-items: center;
       }
     }
   }

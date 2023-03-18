@@ -2,12 +2,12 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-03 21:31:17
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-03 21:37:33
+ * @LastEditTime: 2023-03-17 19:37:10
  * @FilePath: /nosgram/src/components/loading/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <div class="loading">
+  <div class="loading" :style="`width: ${size};height: ${size}`">
     <div class="loading-dot"></div>
     <div class="loading-dot"></div>
     <div class="loading-dot"></div>
@@ -18,15 +18,15 @@
 </template>
 
 <script lang="ts">
-import { Vue } from "vue-class-component";
-
-export default class Loading extends Vue {}
+import { Vue, prop } from "vue-class-component";
+class LoadingProp {
+  size = prop<string>({ required: true, default: "40px" });
+}
+export default class Loading extends Vue.with(LoadingProp) {}
 </script>
 
 <style lang="css" scoped>
 .loading {
-  width: 40px;
-  height: 40px;
   position: relative;
   animation: loading 2.5s infinite linear both;
 }

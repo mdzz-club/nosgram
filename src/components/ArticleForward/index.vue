@@ -37,7 +37,10 @@
 import Avatar from "vue-boring-avatars";
 import { Vue, Options } from "vue-class-component";
 import { Prop } from "vue-property-decorator";
-import type { Client_tags } from "@/common/js/nostr-tools/nostr-tools.d";
+import type {
+  Author,
+  Client_tags,
+} from "@/common/js/nostr-tools/nostr-tools.d";
 import ArticleVideo from "../ArticleVideo/index.vue";
 import ArticlePhotos from "../ArticleVideo/index.vue";
 import ArticleHtml from "../ArticleHtml/index.vue";
@@ -81,7 +84,7 @@ export default class ArticleForward extends Vue {
   }
   get author() {
     const params = this.source?.client_forward || {};
-    return getAuthor(params);
+    return getAuthor(params as Author);
   }
   get content() {
     return this.source?.client_forward || null;

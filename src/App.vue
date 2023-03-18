@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-24 17:04:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 16:04:16
+ * @LastEditTime: 2023-03-18 11:42:29
  * @FilePath: /nosgram/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -38,8 +38,17 @@ import { loginModule } from "@/store/modules/login";
   },
 })
 export default class App extends mixins(NostrToolsMixins) {
-  mounted() {
+  async mounted() {
+    await this._initLogin();
+
     nostrToolsModule.ns_init(this.defaultRelays);
+  }
+  async _initLogin() {
+    const isLogin = await window.localforage.getItem("is_login");
+    if (isLogin) {
+      const user_info = await window.localforage.getItem("user_info");
+      loginModule.login(user_info, false);
+    }
   }
   get isShowLogin() {
     return loginModule.show;

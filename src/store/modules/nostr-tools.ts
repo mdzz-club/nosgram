@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-15 21:23:41
+ * @LastEditTime: 2023-03-18 20:41:35
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -46,6 +46,7 @@ class NostrToolsModule extends VuexModule {
   @Mutation
   ns_close(data: { url: string; closeId: string }) {
     const { url, closeId } = data;
+    if (closeId.indexOf(":") === -1) return;
     wsModule.send({
       urlIndex: url,
       params: ["CLOSE", closeId],
@@ -204,18 +205,25 @@ class NostrToolsModule extends VuexModule {
    * @return {Promise} 若url传入为数组，因为多个地址结果，所以不会一起返回。获取多个结果请使用getData获取
    */
   @Action
-  ns_send(data: { url: string | string[]; params: unknown }) {
+  ns_send(data: {
+    url: string | string[];
+    params: unknown | Record<string, string>;
+  }) {
     const { url, params } = data;
     const urlList = typeof url === "string" ? [url] : url;
     const [_, eventId] = params as string[];
+    const clinet_eventId =
+      typeof eventId === "string"
+        ? eventId
+        : (eventId as Record<string, string>).id;
     urlList.forEach((e) => {
-      this.ns_initPool({ eventId, api: e });
+      this.ns_initPool({ eventId: clinet_eventId, api: e });
       wsModule.send({
         urlIndex: e,
         params,
       });
     });
-    return this.ns_processingData(eventId);
+    return this.ns_processingData(clinet_eventId);
     // return new Promise((resolve) => {
     //   if (typeof url === "string")
     //     this.ns_wait({ eventId, resolve, urlIndex: url });

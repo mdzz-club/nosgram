@@ -2,12 +2,17 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-13 22:50:04
+ * @LastEditTime: 2023-03-18 20:41:06
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import { dayjs } from "element-plus";
-import type { mapOriginDataResult, Author } from "./nostr-tools.d";
+import type {
+  mapOriginDataResult,
+  Author,
+  Client_userInfo,
+} from "./nostr-tools.d";
+import * as secp from "@noble/secp256k1";
 
 enum mapOriginDataType {
   metadata,
@@ -186,11 +191,7 @@ export const mergeOriginData = (data: Record<string, unknown>) => {
   const keys = Object.keys(data);
   let result: unknown[] = [];
   keys.forEach((e) => {
-    const newData = deDuplication(
-      result as { id: string }[],
-      data[e] as { id: string }[]
-    );
-    result = result.concat(newData);
+    result = result.concat(data[e]);
   });
   return result;
 };
@@ -216,15 +217,53 @@ export const resetTime = (time: number | undefined, nullText = "刚刚") => {
 };
 
 export const getAuthor = (
-  obj: Author
+  obj: Author,
+  key = "client_userInfo"
 ): Record<string, string | undefined | number> => {
   const result: Record<string, string | undefined | number> = {};
-  result.icon = obj?.client_userInfo?.content?.picture;
-  result.iconName = obj?.pubkey;
-  result.author = obj?.client_userInfo
-    ? obj?.client_userInfo.content.display_name ||
-      obj?.client_userInfo.content.displayName ||
-      obj?.client_userInfo.content.name
-    : getAuthorIdName(obj?.pubkey);
+  if (obj) {
+    result.iconName = (obj as Record<string, string>).pubkey;
+    let icon = "";
+    let author = "";
+    if (obj[key] && (obj[key] as Client_userInfo).content) {
+      const content = (obj[key] as Client_userInfo).content;
+      icon = content.picture as string;
+      author =
+        (content.display_name as string) ||
+        (content.displayName as string) ||
+        (content.name as string) ||
+        getAuthorIdName((obj as Record<string, string>).pubkey);
+    } else {
+      icon = "";
+      author = getAuthorIdName((obj as Record<string, string>).pubkey);
+    }
+    result.icon = icon;
+    result.author = author;
+  }
   return result;
+};
+
+/**
+ * @method getKeyType 获取输入key的类型
+ * @param {string} key key
+ * @returns {string} 返回key的类型
+ */
+export const getKeyType = (key: string) => {
+  const EmailRegex = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/;
+  const MnemonicRegex = /^([^\s]+\s){11}[^\s]+$/;
+  if (key.startsWith("nsec")) {
+    return "nsec"; // 返回私钥-（bech32编码方式）
+  } else if (key.startsWith("npub")) {
+    return "npub"; // 返回共钥-（bech32编码方式）
+  } else if (key.match(EmailRegex)) {
+    return "nip05"; // 返回共钥匙-（需要调接口拿到公钥）
+  } else if (key.match(MnemonicRegex)) {
+    return "mnemonic"; // 返回助记词-（前端处理）
+  } else if (secp.utils.isValidPrivateKey(key)) {
+    return "privateKey"; // 返回私钥-（16进制编码）
+  } else {
+    // throw new Error("INVALID PRIVATE KEY");
+    return "";
+  }
+  // nip07 浏览器插件注入
 };

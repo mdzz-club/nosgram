@@ -10,6 +10,16 @@
   color: rgb(var(--link-font-color))
 }
 
+.filter-blur-10 {
+  filter: blur(5px);
+}
+
+.cursor {
+  &-pointer {
+    cursor: pointer;
+  }
+}
+
 .position{
   &-relative {
     position: relative;
@@ -19,14 +29,16 @@
   }
 }
 
-.align-right {
-  text-align: right;
-}
-.align-left {
-  text-align: left;
-}
-.align-center {
-  text-align: center;
+.align{
+  &-right {
+    text-align: right;
+  }
+  &-left {
+    text-align: left;
+  }
+  &-center {
+    text-align: center;
+  }
 }
 
 .font-first-color{
@@ -72,6 +84,25 @@
   border-bottom: solid 1px rgb(var(--border-color));
 }
 
+.margin-auto {
+  margin: auto;
+}
+
+@for $i from 0 through 30 {
+  .left-#{$i} {
+    left: #{$i}px
+  }
+  .top-#{$i} {
+    top: #{$i}px
+  }
+  .bottom-#{$i} {
+    bottom: #{$i}px
+  }
+  .right-#{$i} {
+    right: #{$i}px
+  }
+}
+
 @for $i from 12 through 42 {
   .font-size-#{$i} {
     font-size: #{$i}px;
@@ -112,7 +143,7 @@
   }
 }
 
-@for $i from 2 through 80 {
+@for $i from 0 through 80 {
   .margin-right-#{$i} {
     margin-right: #{$i}px;
   }
@@ -121,7 +152,23 @@
     margin-left: #{$i}px;
   }
 
+  .margin-top-#{$i} {
+    margin-top: #{$i}px;
+  }
+
   .margin-bottom-#{$i} {
     margin-bottom: #{$i}px;
+  }
+
+  .margin-right-#{$i}-important {
+    margin-right: #{$i}px !important;
+  }
+
+  .margin-left-#{$i}-important {
+    margin-left: #{$i}px !important;
+  }
+
+  .margin-bottom-#{$i}-important {
+    margin-bottom: #{$i}px !important;
   }
 }

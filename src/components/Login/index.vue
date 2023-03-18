@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-15 16:49:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 15:55:00
+ * @LastEditTime: 2023-03-17 21:08:31
  * @FilePath: /nosgram/src/components/Login/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -19,8 +19,13 @@
                 v-model="password"
                 placeholder="输入您的口令"
               />
-              <el-button type="primary">
-                <el-icon size="18">
+              <el-button
+                type="primary"
+                :loading="loginLoading"
+                @click="_submit"
+                :disabled="!password"
+              >
+                <el-icon size="18" v-show="!loginLoading">
                   <icon-ion-logo-ionic />
                 </el-icon>
                 <div class="margin-left-5">登录</div>
@@ -40,9 +45,9 @@
               :show-file-list="false"
               :auto-upload="false"
               :on-change="_handleChange"
-              :disabled="loading"
+              :disabled="uploadLoading"
             >
-              <el-button :disabled="loading" type="primary" round>
+              <el-button :disabled="uploadLoading" type="primary" round>
                 <el-icon size="18">
                   <icon-ion-qr-code />
                 </el-icon>
@@ -134,7 +139,7 @@
           </div>
         </div>
         <div class="align-right">
-          <el-button type="primary" link @click="_login">
+          <el-button type="primary" link @click="_mnemonicLogin()">
             保存完毕，登录
           </el-button>
         </div>
@@ -145,12 +150,16 @@
 
 <script lang="ts">
 import Clipboard from "clipboard";
-import { Vue, Options } from "vue-class-component";
-import { Prop } from "vue-property-decorator";
+import { Options, mixins } from "vue-class-component";
+// import { Prop } from "vue-property-decorator";
+import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 import Qrcode from "qrcode.vue";
-import { nip06, getPublicKey } from "nostr-tools";
+import { nip06, getPublicKey, nip19 } from "nostr-tools";
 import { loginModule } from "@/store/modules/login";
+import type { UserInfo, UserInfoDetails } from "@/store/modules/login";
 import QrcodeDecoder from "../../../node_modules/qrcode-decoder/dist/index";
+import { getKeyType } from "@/common/js/nostr-tools/index";
+import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import { ElMessage, UploadRawFile } from "element-plus";
 import "element-plus/es/components/message/style/css";
 // nip06.generateSeedWords() 生成助记词
@@ -163,7 +172,7 @@ import "element-plus/es/components/message/style/css";
     Qrcode,
   },
 })
-export default class Login extends Vue {
+export default class Login extends mixins(NostrToolsMixins) {
   loginModule = loginModule;
   password = "";
   create = {
@@ -171,7 +180,18 @@ export default class Login extends Vue {
     size: 160,
     show: false,
   };
-  loading = false;
+  uploadLoading = false;
+  loginLoading = false;
+  _reset() {
+    this.password = "";
+    this.create = {
+      code: "",
+      size: 160,
+      show: false,
+    };
+    this.uploadLoading = false;
+    this.loginLoading = false;
+  }
   async _handleChange(params: Record<string, UploadRawFile | number | string>) {
     const { raw } = params as { raw: UploadRawFile };
     if (
@@ -180,18 +200,126 @@ export default class Login extends Vue {
       raw.type !== "image/jpg"
     )
       return ElMessage.warning("请上传类型为jpg、png或者jpeg的文件");
-    this.loading = true;
+    this.uploadLoading = true;
     const url = window.webkitURL.createObjectURL(raw as UploadRawFile);
     const qr = new QrcodeDecoder();
     const result = await qr.decodeFromImage(url);
-    this.loading = false;
+    this.uploadLoading = false;
     if (result) {
       const { data } = result;
       this.password = data;
+      this._submit();
     } else ElMessage.warning("识别失败请检查专属二维码");
   }
-  _login() {
-    //
+  async _getUserInfo(author: string) {
+    loginModule.setUserInfoLoad(true);
+    const res = await nostrToolsModule.ns_send({
+      url: this.defaultRelays,
+      params: [
+        "REQ",
+        this.randomEventId("user"),
+        {
+          kinds: [0],
+          until: ~~(Date.now() / 1000),
+          limit: 1,
+          authors: [author],
+        },
+      ],
+    });
+    loginModule.setUserInfoLoad(false);
+    this._reset();
+    if (res) {
+      loginModule.setUserInfo({
+        ...loginModule.userInfo,
+        details: res[0] as UserInfoDetails,
+      });
+    }
+  }
+  _mnemonicLogin(code?: string) {
+    this.loginLoading = true;
+    const { privateKeyFromSeedWords } = nip06;
+    const privateKey = privateKeyFromSeedWords(code || this.create.code);
+    const publicKey = getPublicKey(privateKey);
+    this._login({
+      privateKey,
+      publicKey,
+      readOnly: false,
+    });
+  }
+  async getNip05PublicKey(params: string) {
+    const [name, api] = params.split("@");
+    let res = null;
+    try {
+      res = await this.$http.get(
+        `https://${api}/.well-known/nostr.json?name=${name}`
+      );
+    } catch (e) {
+      return "";
+    }
+    if (res) {
+      const { names } = res.data;
+      if (names) {
+        const keys = Object.keys(names);
+        let result = "";
+        keys.some((e) => {
+          if (e === name) {
+            result = names[e];
+            return true;
+          }
+        });
+        return result;
+      }
+    }
+    return "";
+  }
+  _login(loginParams: UserInfo) {
+    loginModule.login(loginParams);
+
+    this.loginLoading = false;
+    loginModule.toggle(false);
+
+    this._getUserInfo(loginParams.publicKey as string);
+  }
+  async _submit() {
+    this.loginLoading = true;
+    const type = getKeyType(this.password);
+    const { decode } = nip19; // 把bech32编码方式转为16进制编码
+    let privateKey = "";
+    let publicKey = "";
+    const loginParams: UserInfo = { readOnly: false };
+    if (!type)
+      return ElMessage({
+        type: "error",
+        message: "您输入的口令/nsec/npub/nip-05/hex有误",
+      });
+    if (type === "mnemonic") {
+      this.loginLoading = false;
+      return this._mnemonicLogin(this.password);
+    } else if (type === "nsec") {
+      const { data } = decode(this.password) as { data: string };
+      privateKey = data;
+      publicKey = getPublicKey(data);
+    } else if (type === "npub") {
+      const { data } = decode(this.password) as { data: string };
+      publicKey = data;
+      loginParams.readOnly = true;
+    } else if (type === "privateKey") {
+      privateKey = this.password;
+      publicKey = getPublicKey(this.password);
+    } else if (type === "nip05") {
+      publicKey = await this.getNip05PublicKey(this.password);
+      if (publicKey === "") {
+        this.loginLoading = false;
+        return ElMessage({
+          type: "error",
+          message: "您输入nip05有误",
+        });
+      }
+      loginParams.readOnly = true;
+    }
+    loginParams.privateKey = privateKey;
+    loginParams.publicKey = publicKey;
+    this._login(loginParams);
   }
   _createCode() {
     this.create.show = true;
@@ -258,7 +386,7 @@ export default class Login extends Vue {
 }
 .qrcode {
   &-container {
-    background-image: url(http://localhost:8080/img/save-qrcode-zh.08c2c5fd.jpg);
+    background-image: url("~@/assets/img/save-qrcode-zh.jpg");
     background-repeat: no-repeat;
     background-size: 110px auto;
     background-position: 100px 20px;

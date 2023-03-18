@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 20:18:44
+ * @LastEditTime: 2023-03-17 20:41:42
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -23,17 +23,16 @@
       }"
     >
       <div class="left-top display-flex">
-        <div class="left-top-info display-flex">
-          <div class="logo">
-            <avatar
-              v-if="!author.icon"
-              :size="48"
-              :name="author.iconName"
-              :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
-            />
-            <img v-else :src="(author.icon as string)" alt="icon" />
+        <author-info
+          padding="0"
+          :source="viewData"
+          avatarWidth="48"
+          avatarHeight="48"
+          :isShowCreateTime="false"
+        >
+          <template #avatar>
             <div
-              class="button-container"
+              class="toggle-button"
               v-if="mediaTotal"
               @click="showComment = !showComment"
             >
@@ -44,19 +43,12 @@
                 ><icon-majesticons-chevron-double-down-line
               /></el-icon>
             </div>
-          </div>
-          <div class="name">
-            <el-button link>
-              <span class="font-weight-600 font-size-16 default-font-color">{{
-                author.author
-              }}</span>
-            </el-button>
-            <el-button link type="primary">
-              <span class="font-size-14">关注</span>
-            </el-button>
-          </div>
-        </div>
-        <div class="left-top-button_group">
+          </template>
+          <el-button class="margin-left-0-important" link type="primary">
+            <span class="font-size-14">关注</span>
+          </el-button>
+        </author-info>
+        <div class="left-top-back">
           <el-button link @click="_back"
             ><el-icon size="25"><icon-ion-arrow-back /></el-icon
           ></el-button>
@@ -134,7 +126,10 @@ import Avatar from "vue-boring-avatars";
 import { Options, mixins } from "vue-class-component";
 import { Prop } from "vue-property-decorator";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
-import { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
+import {
+  Author,
+  mapOriginDataResult,
+} from "@/common/js/nostr-tools/nostr-tools.d";
 import ArticleMedia from "@/components/ArticleMedia/index.vue";
 import { getAuthor } from "@/common/js/nostr-tools/index";
 import { dayjs } from "element-plus";
@@ -144,6 +139,7 @@ import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import Loading from "@/components/loading/index.vue";
 import { isPhone } from "@/common/js/common";
 import ChatInputBox from "@/components/ChatInputBox/index.vue";
+import { AuthorInfo } from "@/components/Base/index";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
@@ -158,6 +154,7 @@ interface Source extends mapOriginDataResult {
     Comment,
     Loading,
     ChatInputBox,
+    AuthorInfo,
   },
 })
 export default class Details extends mixins(NostrToolsMixins) {
@@ -314,7 +311,7 @@ export default class Details extends mixins(NostrToolsMixins) {
     );
   }
   get author() {
-    return getAuthor(this.viewData);
+    return getAuthor(this.viewData as Author);
   }
   get mediaTotal() {
     const photos = this.viewData?.client_photos?.length || 0;
@@ -334,6 +331,44 @@ $author_height: 70px;
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+}
+.toggle-button {
+  width: 48px;
+  height: 48px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  margin: auto;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  &::after,
+  &::before {
+    content: "";
+    display: block;
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    margin: auto;
+  }
+  &::after {
+    border: 1px solid white;
+    border-radius: 50%;
+    animation: border-animation-outside 1s ease-out infinite;
+  }
+  &::before {
+    border: 1px solid white;
+    border-radius: 50%;
+    animation: border-animation-inside 2s ease-out infinite;
   }
 }
 .details-container {
@@ -362,77 +397,7 @@ $author_height: 70px;
           padding-left: 20px;
           min-height: $author_height;
           border-bottom: solid 1px rgb(var(--border-color));
-          &-info {
-            .name,
-            .logo {
-              position: relative;
-              margin-right: 12px;
-              img {
-                width: 48px;
-                height: 48px;
-                border-radius: 100%;
-              }
-            }
-            .name {
-              display: flex;
-              align-items: flex-start;
-              justify-content: center;
-              flex-direction: column;
-              line-height: 1em;
-              .el-button {
-                margin: 0;
-                padding: 0;
-                & + .el-button {
-                  margin-top: 3px;
-                }
-              }
-            }
-            .logo {
-              display: flex;
-              justify-items: center;
-              align-items: center;
-              & > .button-container {
-                // filter: blur(15px);
-                width: 48px;
-                height: 48px;
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                top: 0;
-                margin: auto;
-                display: none;
-                justify-content: center;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-                &::after,
-                &::before {
-                  content: "";
-                  display: block;
-                  width: 25px;
-                  height: 25px;
-                  position: absolute;
-                  left: 0;
-                  right: 0;
-                  bottom: 0;
-                  top: 0;
-                  margin: auto;
-                }
-                &::after {
-                  border: 1px solid white;
-                  border-radius: 50%;
-                  animation: border-animation-outside 1s ease-out infinite;
-                }
-                &::before {
-                  border: 1px solid white;
-                  border-radius: 50%;
-                  animation: border-animation-inside 2s ease-out infinite;
-                }
-              }
-            }
-          }
-          &-button_group {
+          &-back {
             display: none;
           }
         }
@@ -489,8 +454,6 @@ $author_height: 70px;
       &-left {
         border: solid 1px rgb(var(--border-color));
       }
-      &-right {
-      }
     }
   }
 }
@@ -536,7 +499,9 @@ $author_height: 70px;
     bottom: initial;
     top: 0;
   }
-
+  .toggle-button {
+    display: flex !important;
+  }
   .details {
     &-container {
       position: relative;
@@ -579,19 +544,14 @@ $author_height: 70px;
         &-top {
           justify-content: space-between;
           flex-direction: row-reverse;
-          &-info {
+          :deep(.author-info-left) {
             justify-content: space-between;
             flex-direction: row-reverse;
             .name {
               align-items: flex-end !important;
             }
-            .logo {
-              .button-container {
-                display: flex !important;
-              }
-            }
           }
-          &-button_group {
+          &-back {
             display: flex !important;
             align-items: center;
           }
