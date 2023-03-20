@@ -1,5 +1,11 @@
+/* --shadow-1: rgba(0, 0, 0, 0.1);
+--shadow-2: rgba(0, 0, 0, 0.2);
+--shadow-5: rgba(0, 0, 0, 0.5);
+--shadow-8: rgba(0, 0, 0, 0.8); */
 :root {
   --loading-color: 0, 0, 0;
+
+  --bg-color: 248,248,248;
 
   --first-color: 40, 40, 40;
   --second-color: 150, 150, 150;
@@ -15,12 +21,16 @@
   --content-additional_width: 400px;
   --content-right-spacing_width: 60px;
 
+  --additional-bg-clor: 255, 255, 255;
+
   --border-color: 219, 219, 219;
 
   --link-font-color: 0, 55, 107;
   
   --article-size: 15px;
+  --article-bg-color: 255, 255, 255;
   --article-media-height: 500px;
+  --article-box_shadow-clor: rgba(0, 0, 0, 0.1);
 
   --content-container-padding: 0;
   --content-border: solid 1px rgb(var(--border-color));

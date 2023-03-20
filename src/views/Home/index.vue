@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 22:26:40
+ * @LastEditTime: 2023-03-20 19:25:35
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -71,9 +71,10 @@ export default class Home extends mixins(NostrToolsMixins) {
   }
   // 组装loading项，用于加载更多显示loading
   get virtualList() {
+    const result = [{ id: "client_virtualList_release" }].concat(this.listData);
     if (this.loading)
-      return this.listData.concat([{ id: "client_virtualList_loading" }]);
-    else return this.listData;
+      return result.concat([{ id: "client_virtualList_loading" }]);
+    else return result;
   }
   async _init() {
     await this._getData();
@@ -156,9 +157,10 @@ export default class Home extends mixins(NostrToolsMixins) {
     // 获取动态中随机数量的人，然后去找对应人的发布信息/点赞等操作
     const getItem = async (
       origin: mapOriginDataResult[],
-      result: mapOriginDataResult[] = []
+      result: mapOriginDataResult[] = [],
+      times = 0
     ): Promise<mapOriginDataResult[]> => {
-      if (result.length === size) return result;
+      if (result.length === size || times > 20) return result;
       const index = random(0, origin.length - 1);
       const item = origin[index] as mapOriginDataResult;
       let exists = false;
@@ -175,7 +177,7 @@ export default class Home extends mixins(NostrToolsMixins) {
           result.push(item);
         }
       }
-      return getItem(origin, result);
+      return getItem(origin, result, times + 1);
     };
     const authors = await getItem(activityData, []);
     this.followerData = authors;

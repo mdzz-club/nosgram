@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-17 20:41:42
+ * @LastEditTime: 2023-03-19 20:58:57
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -71,27 +71,12 @@
       <div class="left-bottom">
         <div class="button-group">
           <div>
-            <el-tooltip effect="dark" content="评论">
-              <el-button link
-                ><el-icon size="25"
-                  ><icon-ion-chatbubble-ellipses-outline /></el-icon
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip effect="dark" content="点赞">
-              <el-button link
-                ><el-icon size="25"><icon-ion-heart-outline /></el-icon
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip effect="dark" content="转发">
-              <el-button link
-                ><el-icon size="25"><icon-ion-arrow-redo-outline /></el-icon
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip effect="dark" content="收藏">
-              <el-button link
-                ><el-icon size="25"><icon-ion-duplicate-outline /></el-icon
-              ></el-button>
-            </el-tooltip>
+            <button-group
+              ref="button-group"
+              :source="viewData"
+              size="25"
+              :buttons="buttons"
+            />
           </div>
           <div class="display-flex create-time">
             <p class="first-font-color font-size-14 margin-bottom-3">
@@ -167,14 +152,22 @@ export default class Details extends mixins(NostrToolsMixins) {
   loading = false;
   detailsLoading = false;
   showComment = false;
+  likesLoading = true;
   @Watch("source")
   onSourceChanged() {
     this._getComment();
   }
   async mounted() {
     if (!this.isComponent) await this.getSource();
+    await this.initLike();
     await this._getComment();
     setTimeout(() => this._setMediaHeight(), 0);
+  }
+  async initLike() {
+    this.likesLoading = true;
+    await this._getLikes([this.viewData]);
+    this.$refs["button-group"].setLike();
+    this.likesLoading = false;
   }
   async handleInteractionInput(params: Record<string, string>) {
     setTimeout(
@@ -254,10 +247,10 @@ export default class Details extends mixins(NostrToolsMixins) {
         },
       ],
     });
-    // const commentData: mapOriginDataResult[] =
-    //   await nostrToolsModule.ns_processingData(detailsRandom);
+    await this._getLikes(commentData);
     // 获取动态的对应的互动
     await this._getInteraction(commentData);
+    console.log("commentData-------", commentData);
     if (id) {
       if (Object.prototype.toString.call(item) !== "[object Array]") {
         if (commentData?.length) {
@@ -285,6 +278,9 @@ export default class Details extends mixins(NostrToolsMixins) {
   }
   _emit(params: mapOriginDataResult, index: string) {
     this._getComment({ id: params.id as string, index });
+  }
+  get buttons() {
+    return [{ type: "like", loading: this.likesLoading }, "forward", "collect"];
   }
   get isPhoneDevice() {
     return isPhone();

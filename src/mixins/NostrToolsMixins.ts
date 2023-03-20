@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 13:53:11
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 21:59:50
+ * @LastEditTime: 2023-03-19 22:15:44
  * @FilePath: /nosgram/src/mixins/nostrToolsMixins.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -16,7 +16,7 @@ import type { Relay } from "@/common/js/relays/relays.d";
 import relays from "@/common/js/relays";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import { loginModule } from "@/store/modules/login";
-import { finishEvent } from "nostr-tools";
+import type { EventTemplate } from "nostr-tools";
 
 export default class nostrToolsMixins extends Vue {
   defaultRelays = JSON.parse(JSON.stringify(relays)).map((e: Relay) => e.url);
@@ -196,7 +196,6 @@ export default class nostrToolsMixins extends Vue {
         },
       ],
     });
-    console.log("-------res", res);
     activityData.forEach((ele) => {
       res.some((e) => {
         const { tags, id } = e as Record<string, string[] | string>;
@@ -209,43 +208,13 @@ export default class nostrToolsMixins extends Vue {
         } else return false;
       });
     });
-    console.log("-------activityData", activityData);
   }
   // 点赞
-  async _like(
-    params: { id: string; pubkey: string; client_likeId?: string },
-    type: boolean
-  ) {
-    if (!loginModule.isLogin) {
-      loginModule.toggle();
-      return;
-    }
-    const { privateKey } = loginModule.userInfo;
-    const { id, pubkey, client_likeId } = params;
-    const req = finishEvent(
-      type
-        ? {
-            kind: 7,
-            content: "+",
-            created_at: ~~(Date.now() / 1000),
-            tags: [
-              ["e", id],
-              ["p", pubkey],
-            ],
-          }
-        : {
-            kind: 5,
-            content: "cancle",
-            created_at: ~~(Date.now() / 1000),
-            tags: [["e", client_likeId as string]],
-          },
-      privateKey as string
-    );
+  async _like(req: EventTemplate) {
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: ["EVENT", req],
     });
-    console.log(res, "-------------------like");
     if (res) {
       let success = false;
       res.some((e) => {
@@ -254,7 +223,7 @@ export default class nostrToolsMixins extends Vue {
           return true;
         } else return false;
       });
-      return success;
-    } else return false;
+      return { type: success, id: res[0].clinet_handleId };
+    } else return { type: false };
   }
 }

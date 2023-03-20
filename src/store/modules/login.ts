@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 11:42:45
+ * @LastEditTime: 2023-03-20 09:53:01
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -29,7 +29,13 @@ class LoginModule extends VuexModule {
 
   @Mutation
   setUserInfo(params: UserInfo | null, localStorage = true) {
-    const userInfo = params ? { ...this.userInfo, ...params } : {};
+    const userInfo = params
+      ? {
+          ...this.userInfo,
+          ...params,
+          readOnly: params.privateKey ? false : true,
+        }
+      : {};
     const isLogin = params?.publicKey ? true : false;
     this.userInfo = userInfo;
     this.isLogin = isLogin;

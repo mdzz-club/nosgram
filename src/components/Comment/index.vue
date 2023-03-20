@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-10 09:33:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-17 20:48:35
+ * @LastEditTime: 2023-03-19 20:19:06
  * @FilePath: /nosgram/src/components/comment/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -27,9 +27,10 @@
             >{{ _moreCommentButton(item) }}</el-button
           >
           <div class="like-container">
-            <el-button link>
+            <!-- <el-button link>
               <el-icon size="14"><icon-majesticons-thumb-up-line /></el-icon>
-            </el-button>
+            </el-button> -->
+            <button-group size="14px" :source="item" :buttons="['good']" />
           </div>
         </div>
         <div v-show="item.client_moreComment === 1">
@@ -62,6 +63,7 @@ import {
   resetTime,
   getAuthorIdName,
 } from "@/common/js/nostr-tools/index";
+import ButtonGroup from "../Base/ButtonGroup/index.vue";
 import { AuthorInfo } from "@/components/Base/index";
 
 enum Client_moreComment {

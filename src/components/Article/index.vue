@@ -2,12 +2,15 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 17:10:56
+ * @LastEditTime: 2023-03-20 20:15:57
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <article v-if="!isLoadingItem" class="article full-width">
+  <!-- <div class="release-component" v-if="isReleaseItem">
+    <release />
+  </div> -->
+  <article v-if="!isLoadingItem && !isReleaseItem" class="article full-width">
     <div class="article-top">
       <article-media :data="source" />
     </div>
@@ -41,7 +44,7 @@
       </author-info>
     </div>
   </article>
-  <div class="loading-container" v-else>
+  <div class="loading-container" v-if="isLoadingItem">
     <loading />
   </div>
 </template>
@@ -60,6 +63,7 @@ import type {
   mapOriginDataResult,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import { isPhone } from "@/common/js/common";
+import Release from "@/components/Release/index.vue";
 
 interface Source extends mapOriginDataResult {
   client_fn_details: (params: any) => void;
@@ -78,6 +82,7 @@ class ArticleProps {
     ArticleForward,
     AuthorInfo,
     ButtonGroup,
+    Release,
   },
 })
 export default class Article extends Vue.with(ArticleProps) {
@@ -108,6 +113,10 @@ export default class Article extends Vue.with(ArticleProps) {
   get isLoadingItem() {
     return this.source.id === "client_virtualList_loading";
   }
+
+  get isReleaseItem() {
+    return this.source.id === "client_virtualList_release";
+  }
 }
 </script>
 
@@ -122,13 +131,21 @@ export default class Article extends Vue.with(ArticleProps) {
   padding: 40px;
 }
 
+.release-component {
+  width: var(--content_width);
+  transform: var(--content-transform);
+  margin: auto;
+}
+
 .article {
   overflow: hidden;
   border: var(--content-border);
-  border-radius: 3px;
-  margin: auto auto 10px auto;
+  border-radius: 5px;
+  margin: auto auto 15px auto;
   width: var(--content_width);
   transform: var(--content-transform);
+  background: rgb(var(--article-bg-color));
+  box-shadow: 0 1px 2px var(--article-box_shadow-clor);
   &-top {
   }
   &-bottom {
