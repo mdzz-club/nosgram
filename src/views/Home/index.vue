@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-20 19:25:35
+ * @LastEditTime: 2023-03-21 12:27:09
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -117,11 +117,11 @@ export default class Home extends mixins(NostrToolsMixins) {
       }[]
     );
     // 获取动态的对应的互动
-    await this._getInteraction(activityData);
+    this._getInteraction(activityData);
     // 获取文章中转发的内容
-    await this._getForward(activityData);
+    this._getForward(activityData);
     // 获取文章的点赞信息，id
-    await this._getLikes(activityData);
+    this._getLikes(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
