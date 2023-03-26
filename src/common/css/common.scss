@@ -29,6 +29,18 @@
   }
 }
 
+.justify {
+  &-center {
+    justify-content: center;
+  }
+  &-bottom {
+    justify-content: flex-end;
+  }
+  &-between {
+    justify-content: space-between;
+  }
+}
+
 .align{
   &-right {
     text-align: right;
@@ -63,8 +75,13 @@
   }
 }
 
-.align-items-center {
-  align-items: center;
+.align-items{
+  &-center {
+    align-items: center;
+  }
+  &-bottom {
+    align-items: flex-end;
+  }
 }
 
 .full {
@@ -77,6 +94,9 @@
 
   &-width {
     width: 100%;
+    &-important {
+      width: 100% !important;
+    }
   }
 }
 
@@ -115,9 +135,12 @@
   }
 }
 
-@for $i from 40 through 200 {
+@for $i from 30 through 200 {
   .width-#{$i} {
     width: #{$i}px;
+  }
+  .height-#{$i} {
+    height: #{$i}px;
   }
 }
 

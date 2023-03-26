@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 20:41:06
+ * @LastEditTime: 2023-03-26 21:34:08
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,7 @@ import type {
   mapOriginDataResult,
   Author,
   Client_userInfo,
+  ProcessingContent,
 } from "./nostr-tools.d";
 import * as secp from "@noble/secp256k1";
 
@@ -45,27 +46,6 @@ const mdIt = require("markdown-it")({
 //   }
 // );
 
-export const deDuplication = <
-  T extends { id: string },
-  U extends { id: string }
->(
-  o: T[],
-  n: U[]
-): U[] => {
-  const result: U[] = [];
-  n.forEach((e) => {
-    let isAdd = true;
-    o.some((ele) => {
-      if (ele.id === e.id) {
-        isAdd = false;
-        return true;
-      } else return false;
-    });
-    if (isAdd) result.push(e);
-  });
-  return result;
-};
-
 const mapALabelLink = (e: string) => {
   const regExp = new RegExp('<a href="(.*?)">', "g");
   const matches = e.match(regExp);
@@ -93,6 +73,133 @@ const getRichTextContent = (
   return getRichTextContent(split[1], jsonParse, result);
 };
 
+/**
+ * @method setInteraction 设置数据中用于显示互动(@/#/转发)数据逻辑
+ * @param data 源数据
+ * @returns 需要请求的用户信息列表
+ */
+export const setInteraction = (data: mapOriginDataResult[]): string[] => {
+  const author: string[] = [];
+  data.forEach((e) => {
+    if (e?.client_richTextIndex?.length && e?.tags?.length) {
+      const indexArr = e.client_richTextIndex;
+      const tags = e.tags;
+      const dic = (key: string) =>
+        ({ e: "forward", p: "user", t: "topic" }[key] || "");
+      indexArr.forEach((element: string) => {
+        const match = element.match(/#\[(\d+)\]/);
+        const index = match && match[1];
+        // #[数字]匹配方式
+        if (index !== null) {
+          if (!tags?.[parseInt(index)]) return;
+          const [key, value] = tags?.[parseInt(index)];
+          const obj = {
+            id: value,
+            type: dic(key),
+            tagsIndex: match?.[1],
+          };
+          // 给原数组添加索引
+          if (!e.client_tags) {
+            e.client_tags = {
+              [element]: obj,
+            };
+          } else e.client_tags[element] = obj;
+          // 添加到要请求的用户信息列表
+          author.push(value);
+        } else {
+          let index = null;
+          tags.some((e: string[], i: number) => {
+            if (e[0] === "t" && e[1] === element.replace("#", "")) {
+              index = i;
+              return true;
+            } else return false;
+          });
+          const obj = {
+            id: element,
+            type: "topic",
+            tagsIndex: `${index}`,
+          };
+          if (!e.client_tags) {
+            e.client_tags = {
+              [element]: obj,
+            };
+          } else e.client_tags[element] = obj;
+        }
+      });
+    }
+  });
+  return author;
+};
+
+export const processingContent = (params: string) => {
+  const result: ProcessingContent = {
+    content: params,
+    client_richTextContent: [],
+  };
+  let md = mdIt.render(result.content);
+  const matchLinks = md.match(/<a.*?href="(.*?)".*?>(.*?)<\/a>/g);
+  const videoRegExp = "mp4|avi|webm|flv|wmv";
+  const picRegExp = "jpg|jpeg|png|gif|bmp|webp";
+  // 过滤出at信息
+  const client_richTextIndex: string[] | null = (
+    result.content as string
+  ).match(/#\[(\d+)\]/g);
+  if (client_richTextIndex?.length) {
+    result.client_richTextContent = getRichTextContent(
+      (result.content as string)
+        .replace(/\n/g, "<br/>")
+        .replace(/\s/g, "&nbsp;"),
+      client_richTextIndex,
+      []
+    );
+    result.client_richTextIndex = client_richTextIndex;
+  } else {
+    // 处理话题特殊情况（不用#[数字]）
+    const tags = result.tags?.filter((e) => e[0] === "t");
+    if (tags?.length) {
+      const clinet_tags = tags.map((e) => `#${e[1]}`);
+      result.client_richTextContent = getRichTextContent(
+        (result.content as string).replace(/\n/g, "<br/>"),
+        clinet_tags,
+        []
+      );
+      result.client_richTextIndex = clinet_tags;
+    }
+  }
+  // 过滤出视频链接
+  const videoLinks = matchLinks
+    ? matchLinks.filter((e: string) => new RegExp(videoRegExp, "g").test(e))
+    : [];
+  // 过滤出图片链接
+  const picLinks = matchLinks
+    ? matchLinks.filter((e: string) => new RegExp(picRegExp, "g").test(e))
+    : [];
+  // 过滤出普通连接
+  const links = matchLinks
+    ? matchLinks.filter(
+        (e: string) =>
+          !new RegExp([videoRegExp, picRegExp].join("|"), "g").test(e)
+      )
+    : [];
+  if (picLinks?.length) {
+    picLinks.forEach((e: string) => {
+      md = md.replace(e, "");
+    });
+    result.client_photos = picLinks.map((e: string) => mapALabelLink(e));
+  }
+  if (videoLinks?.length) {
+    videoLinks.forEach((e: string) => {
+      md = md.replace(e, "");
+    });
+    result.client_videos = videoLinks.map((e: string) => mapALabelLink(e));
+  }
+  if (links?.length)
+    result.client_links = links.map((e: string) => mapALabelLink(e));
+  // to do 需要定位2个问题，有时候有图片链接不识别
+  result.content = md;
+  return result;
+};
+
 export const mapOriginData = (
   item: (string | number | Record<string, string> | [])[],
   type: mapOriginDataType
@@ -108,75 +215,10 @@ export const mapOriginData = (
         try {
           result.content = JSON.parse(result.content as string);
         } catch (e) {
-          let md = mdIt.render(result.content);
-          const matchLinks = md.match(/<a.*?href="(.*?)".*?>(.*?)<\/a>/g);
-          const videoRegExp = "mp4|avi|webm|flv|wmv";
-          const picRegExp = "jpg|jpeg|png|gif|bmp|webp";
-          // 过滤出at信息
-          const client_richTextIndex: string[] | null = (
-            result.content as string
-          ).match(/#\[(\d+)\]/g);
-          if (client_richTextIndex?.length) {
-            result.client_richTextContent = getRichTextContent(
-              (result.content as string)
-                .replace(/\n/g, "<br/>")
-                .replace(/\s/g, "&nbsp;"),
-              client_richTextIndex,
-              []
-            );
-            result.client_richTextIndex = client_richTextIndex;
-          } else {
-            // 处理话题特殊情况（不用#[数字]）
-            const tags = result.tags?.filter((e) => e[0] === "t");
-            if (tags?.length) {
-              const clinet_tags = tags.map((e) => `#${e[1]}`);
-              result.client_richTextContent = getRichTextContent(
-                (result.content as string).replace(/\n/g, "<br/>"),
-                clinet_tags,
-                []
-              );
-              result.client_richTextIndex = clinet_tags;
-            }
-          }
-          // 过滤出视频链接
-          const videoLinks = matchLinks
-            ? matchLinks.filter((e: string) =>
-                new RegExp(videoRegExp, "g").test(e)
-              )
-            : [];
-          // 过滤出图片链接
-          const picLinks = matchLinks
-            ? matchLinks.filter((e: string) =>
-                new RegExp(picRegExp, "g").test(e)
-              )
-            : [];
-          // 过滤出普通连接
-          const links = matchLinks
-            ? matchLinks.filter(
-                (e: string) =>
-                  !new RegExp([videoRegExp, picRegExp].join("|"), "g").test(e)
-              )
-            : [];
-          if (picLinks?.length) {
-            picLinks.forEach((e: string) => {
-              md = md.replace(e, "");
-            });
-            result.client_photos = picLinks.map((e: string) =>
-              mapALabelLink(e)
-            );
-          }
-          if (videoLinks?.length) {
-            videoLinks.forEach((e: string) => {
-              md = md.replace(e, "");
-            });
-            result.client_videos = videoLinks.map((e: string) =>
-              mapALabelLink(e)
-            );
-          }
-          if (links?.length)
-            result.client_links = links.map((e: string) => mapALabelLink(e));
-          // !!!!!需要定位2个问题，有时候有图片链接不识别
-          result.content = md;
+          result = {
+            ...result,
+            ...processingContent(result.content as string),
+          };
         }
       }
     }
@@ -186,12 +228,36 @@ export const mapOriginData = (
   }
 };
 
+export const deDuplication = (
+  o: (string | Record<string, string>)[][],
+  n: (string | Record<string, string>)[][]
+): (string | Record<string, string>)[][] => {
+  const result: (string | Record<string, string>)[][] = [];
+  n.forEach((e) => {
+    const nId = (e[2] as Record<string, string>)?.id;
+    let isAdd = true;
+    o.some((ele) => {
+      const oId = (ele[2] as Record<string, string>)?.id;
+      if (nId === oId) {
+        isAdd = false;
+        return true;
+      } else return false;
+    });
+    if (isAdd) result.push(e);
+  });
+  return result;
+};
+
 // 用于合并由nostrtoolsmixins getdata产出来源于多个中继的数据对象方法
 export const mergeOriginData = (data: Record<string, unknown>) => {
   const keys = Object.keys(data);
-  let result: unknown[] = [];
+  let result: (string | Record<string, string>)[][] = [];
   keys.forEach((e) => {
-    result = result.concat(data[e]);
+    const concatData = deDuplication(
+      result,
+      data[e] as (string | Record<string, string>)[][]
+    );
+    result = result.concat(concatData);
   });
   return result;
 };

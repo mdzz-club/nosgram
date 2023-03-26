@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-20 16:56:08
+ * @LastEditTime: 2023-03-26 12:57:14
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -73,6 +73,8 @@ export default class Setting extends Vue {
     width: 100%;
     border: solid 1px rgb(var(--border-color));
     border-radius: 5px;
+    background: rgb(var(--container-color));
+    box-shadow: 0 1px 2px var(--container-box_shadow-clor);
   }
   &-left {
     margin-bottom: 20px;

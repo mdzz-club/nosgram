@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-18 20:41:35
+ * @LastEditTime: 2023-03-24 11:02:54
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -26,6 +26,8 @@ interface Pool {
   ns_timeout: Record<string, number | undefined>; // 轮询取消订阅
   ns_wait_timeout: Record<string, number | undefined>; // 轮询timeout
 }
+
+type ProcessingDataRes = Record<string, string | Record<string, string[][]>>;
 
 @Module
 class NostrToolsModule extends VuexModule {
@@ -104,11 +106,9 @@ class NostrToolsModule extends VuexModule {
     const parseData = JSON.parse(data as string);
     const [eventType, eventId] = parseData;
     const resData = parseData.concat([{ clinet_api: origin }]);
+    // 若后端返回通知，则不做任何操作
+    if (eventType === "NOTICE") return;
     // 若超过时间没有数据返回，则视为该次请求的结果都返回完毕，取消订阅
-    if (eventType === "NOTICE") {
-      // 若后端返回通知，则
-      return;
-    }
     clearTimeout(this.pools[eventId].ns_timeout[origin]);
     if (this.pools[eventId].ns_data[origin])
       this.pools[eventId].ns_data[origin].push(resData);
@@ -190,12 +190,18 @@ class NostrToolsModule extends VuexModule {
   // 获取指定eventId的数据池，使用时请注意数据时效【定期会清理线程池】
   @Action
   async ns_processingData(eventId: string): Promise<mapOriginDataResult[]> {
-    const result = await this.ns_getData({ eventId });
-    const resultOriginData = mergeOriginData(result as Record<string, []>);
+    const res = await this.ns_getData({ eventId });
+    const keys = Object.keys(res as ProcessingDataRes);
+    keys.forEach((e) => {
+      (res as Record<string, string[][]>)[e] = (
+        res as Record<string, string[][]>
+      )[e].filter((e: string[]) => e[0] !== "EOSE");
+    });
+    const resultOriginData = mergeOriginData(res as Record<string, []>);
     const resultData: mapOriginDataResult[] = resultOriginData.map(
       (e) => mapOriginData(e as [], 1) as mapOriginDataResult
     );
-    return resultData.filter((e) => e.client_messageType !== "EOSE");
+    return resultData;
   }
 
   /**

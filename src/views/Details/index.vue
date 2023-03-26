@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-19 20:58:57
+ * @LastEditTime: 2023-03-26 21:31:07
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -56,11 +56,37 @@
       </div>
       <div class="left-center">
         <!-- {{ source }} -->
-        <div class="comment-component-container" :class="{ loading }">
-          <div class="full-width full-height" v-show="!loading">
-            <comment :emit="_emit" :source="commentData" />
+        <!-- :class="{ loading }" -->
+        <div class="comment-component-container">
+          <div
+            class="full-width display-flex justify-center padding-top-15"
+            v-show="loading && loading !== 2"
+          >
+            <loading />
           </div>
-          <loading v-show="loading" />
+          <div class="full-width full-height">
+            <comment
+              :reply="_handleReplyIndex"
+              :emit="_emit"
+              :source="commentData"
+            />
+            <div
+              v-if="moreLoading"
+              class="full-width display-flex justify-center align-items-bottom height-70"
+            >
+              <el-button
+                v-show="commentData?.length && !loading"
+                link
+                @click="_getComment(undefined, 2)"
+              >
+                <el-icon class="margin-right-10" size="40">
+                  <icon-ion-add-circle-outline />
+                </el-icon>
+                加载更多评论
+              </el-button>
+              <loading v-show="loading === 2" />
+            </div>
+          </div>
           <el-empty
             :image-size="200"
             description="暂无评论"
@@ -85,11 +111,20 @@
             <p class="second-font-color font-size-14">{{ createdTime }}</p>
           </div>
         </div>
-        <div class="full-width">
+        <div
+          class="full-width margin-bottom-10 padding-left-20 padding-right-20"
+        >
           <chat-input-box
             ref="chat-input-box"
-            @interaction-input="handleInteractionInput"
-          />
+            @submit="_handleSubmit"
+            @interaction-input="_handleInteractionInput"
+          >
+            <template #before-input>
+              <el-tag closable type="info" v-show="reply" @close="reply = null">
+                回复：{{ reply && _getAuthor(reply as Author) }}
+              </el-tag>
+            </template>
+          </chat-input-box>
         </div>
       </div>
     </div>
@@ -117,6 +152,7 @@ import {
 } from "@/common/js/nostr-tools/nostr-tools.d";
 import ArticleMedia from "@/components/ArticleMedia/index.vue";
 import { getAuthor } from "@/common/js/nostr-tools/index";
+import { deDuplication } from "@/common/js/common";
 import { dayjs } from "element-plus";
 import { Watch } from "vue-property-decorator";
 import Comment from "@/components/Comment/index.vue";
@@ -125,6 +161,9 @@ import Loading from "@/components/loading/index.vue";
 import { isPhone } from "@/common/js/common";
 import ChatInputBox from "@/components/ChatInputBox/index.vue";
 import { AuthorInfo } from "@/components/Base/index";
+import { finishEvent } from "nostr-tools";
+import { loginModule } from "@/store/modules/login";
+import ChatInputBoxMixins from "@/mixins/ChatInputBoxMixins";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
@@ -142,18 +181,30 @@ interface Source extends mapOriginDataResult {
     AuthorInfo,
   },
 })
-export default class Details extends mixins(NostrToolsMixins) {
+export default class Details extends mixins(
+  NostrToolsMixins,
+  ChatInputBoxMixins
+) {
   @Prop({ default: false }) isComponent!: boolean;
   @Prop({ default: {} }) source!: Source;
   @Prop({ default: null }) closeDialog!: null | ((params: boolean) => void);
   mediaHeight = 0;
   commentData: mapOriginDataResult[] = [];
   detailsSource: Source = {};
-  loading = false;
+  loading: boolean | number = false; // false隐藏 1:顶部loading 2:底部loading
   detailsLoading = false;
   showComment = false;
   likesLoading = true;
+  moreLoading = true; // 是否还有更多数据
+  // 表单信息
+  pageUntil = ~~(Date.now() / 1000);
+  reply: Author | null = null;
+  replyIndex: null | string = null;
   @Watch("source")
+  _getAuthor(params: Author) {
+    const result = getAuthor(params as Author).author as string;
+    return result && result.length > 4 ? `${result.slice(0, 4)}...` : result;
+  }
   onSourceChanged() {
     this._getComment();
   }
@@ -169,26 +220,83 @@ export default class Details extends mixins(NostrToolsMixins) {
     this.$refs["button-group"].setLike();
     this.likesLoading = false;
   }
-  async handleInteractionInput(params: Record<string, string>) {
-    setTimeout(
-      () =>
-        this.$refs["chat-input-box"].setInteractionData(
-          Array(10)
-            .fill({})
-            .map((e, i) => ({ key: `测试他吞吞吐吐-${i}`, value: `test-${i}` }))
-        ),
-      3000
-    );
-    // const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-    //   url: this.defaultRelays,
-    //   params: [
-    //     "REQ",
-    //     this.randomEventId("interaction-input"),
-    //     {
-    //       ids: [id],
-    //     },
-    //   ],
+  async _handleSubmit(
+    params: Record<string, string[][] | string | Record<string, string>>
+  ) {
+    // const { content, tags } = params;
+    const { privateKey } = loginModule.userInfo;
+    const { id: articleId, pubkey: userId } = this.viewData;
+    const { id: replyArticleId, pubkey: replyUserId } = this.reply || {};
+    const replyParams: Record<string, string> | undefined = this.replyIndex
+      ? {
+          id: replyArticleId as string,
+          index: this.replyIndex as string,
+        }
+      : undefined;
+    this._clearReply();
+    this._setLoading(replyParams);
+    // const temp = {
+    //   content: content as string,
+    //   tags: [] as string[][],
+    // };
+    // (tags as string[][]).forEach((e, i) => {
+    //   const [type, id, contentAt] = e;
+    //   if (type === "p") {
+    //     temp.content = temp.content.replace(contentAt, `#[${i}]`);
+    //   }
+    //   temp.tags[i] = [type, id];
     // });
+    const temp = this._getReleaseForm(params);
+    if (replyUserId && replyArticleId) {
+      temp.tags = temp.tags.concat([
+        ["e", replyArticleId as string, "", "reply"],
+        ["p", replyUserId as string],
+      ]);
+    } else {
+      temp.tags = temp.tags.concat([
+        ["e", articleId as string, "", "root"],
+        ["p", userId as string],
+      ]);
+    }
+    const form = finishEvent(
+      {
+        kind: 1,
+        ...temp,
+        created_at: ~~(Date.now() / 1000),
+      },
+      privateKey as string
+    );
+    await this._sendEvent(form);
+    this.pageUntil = ~~(Date.now() / 1000);
+    await this._getComment(replyParams);
+  }
+  /**
+   *
+   * @param params
+   * @param loading 用于设置loading出现位置 false隐藏 1:顶部loading 2:底部loading
+   */
+  _setLoading(params?: Record<string, string>, loading = 1) {
+    const { id, index } = params || {};
+    const item = index
+      ? this._findItem(this.commentData, index.split("-"))
+      : {};
+    if (!id) {
+      this.loading = loading;
+    } else if (id && (item as Source).client_children) {
+      (item as Source).client_moreComment = 2;
+      return;
+    }
+  }
+  _clearReply() {
+    this.reply = null;
+    this.replyIndex = null;
+  }
+  _handleReplyIndex(index: string) {
+    const item = index
+      ? this._findItem(this.commentData, index.split("-"))
+      : {};
+    this.reply = item as Author;
+    this.replyIndex = index;
   }
   async getSource() {
     const { params } = this.$route;
@@ -222,18 +330,13 @@ export default class Details extends mixins(NostrToolsMixins) {
       );
     else return data[parseInt(index)];
   }
-  async _getComment(params?: Record<string, string>) {
+  async _getComment(params?: Record<string, string>, loading = 1) {
     const { id, index } = params || {};
     const item = index
       ? this._findItem(this.commentData, index.split("-"))
       : {};
     // const detailsRandom = this.randomEventId("activity-comment");
-    if (!id) {
-      this.loading = true;
-    } else if (id && (item as Source).client_children) {
-      (item as Source).client_moreComment = 1;
-      return;
-    }
+    this._setLoading(params, loading);
     const commentData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: this.defaultRelays,
       params: [
@@ -241,16 +344,22 @@ export default class Details extends mixins(NostrToolsMixins) {
         this.randomEventId("activity-comment"),
         {
           kinds: [1],
-          until: ~~(Date.now() / 1000),
+          until: id ? ~~(Date.now() / 1000) : this.pageUntil,
           limit: 10,
           "#e": [id || this.viewData.id],
         },
       ],
     });
+    // 获取用户信息
+    await this._getUser(commentData);
+    // 获取点赞信息
     await this._getLikes(commentData);
     // 获取动态的对应的互动
     await this._getInteraction(commentData);
-    console.log("commentData-------", commentData);
+    // 记录最后一条数据的时间
+    !id &&
+      (this.pageUntil = commentData[commentData.length - 1]
+        ?.created_at as number);
     if (id) {
       if (Object.prototype.toString.call(item) !== "[object Array]") {
         if (commentData?.length) {
@@ -261,8 +370,13 @@ export default class Details extends mixins(NostrToolsMixins) {
         }
       }
     } else {
+      const newData = deDuplication(
+        this.commentData as { id: string }[],
+        commentData as { id: string }[]
+      );
+      if (this.commentData.length && !newData.length) this.moreLoading = false;
+      this.commentData = [...this.commentData, ...newData];
       this.loading = false;
-      this.commentData = commentData;
     }
   }
   _setMediaHeight() {
@@ -318,242 +432,5 @@ export default class Details extends mixins(NostrToolsMixins) {
 </script>
 
 <style lang="scss" scoped>
-$author_height: 70px;
-.comment-component-container {
-  padding: 0 0 20px 0;
-  &.loading {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-}
-.toggle-button {
-  width: 48px;
-  height: 48px;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  margin: auto;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  &::after,
-  &::before {
-    content: "";
-    display: block;
-    width: 25px;
-    height: 25px;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 0;
-    margin: auto;
-  }
-  &::after {
-    border: 1px solid white;
-    border-radius: 50%;
-    animation: border-animation-outside 1s ease-out infinite;
-  }
-  &::before {
-    border: 1px solid white;
-    border-radius: 50%;
-    animation: border-animation-inside 2s ease-out infinite;
-  }
-}
-.details-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  overflow: hidden;
-  .details {
-    &-left,
-    &-right {
-      width: 50%;
-      height: 100%;
-    }
-    &-left {
-      display: flex;
-      flex-direction: column;
-      background: rgb(var(--details-bg));
-      border-radius: 5px 0 0 5px;
-      position: relative;
-      &.all-rounded-corner {
-        border-radius: 5px;
-      }
-      .left {
-        &-top {
-          padding-left: 20px;
-          min-height: $author_height;
-          border-bottom: solid 1px rgb(var(--border-color));
-          &-back {
-            display: none;
-          }
-        }
-        &-center {
-          height: calc(100% - $author_height);
-          padding: 0 10px 0 20px;
-          overflow-y: scroll;
-          margin-bottom: 120px;
-        }
-        &-bottom {
-          position: absolute;
-          background: white;
-          width: 100%;
-          left: 0;
-          bottom: 0;
-          border-top: solid 1px rgb(var(--border-color));
-          line-height: 1em;
-          // padding: 10px 20px;
-          padding-top: 10px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            padding: 0 20px;
-            & + * {
-              margin-top: 10px;
-            }
-          }
-          .create-time {
-            flex-direction: column;
-            align-items: flex-end;
-          }
-        }
-      }
-    }
-    &-right {
-      background: rgb(var(--details-media-bg));
-    }
-  }
-  &.page {
-    .details {
-      &-left,
-      &-right {
-        width: 50%;
-        height: var(--details-height);
-        max-width: calc(var(--details-max-width) / 2);
-        max-height: var(--details-max-height);
-      }
-      &-left {
-        border: solid 1px rgb(var(--border-color));
-      }
-    }
-  }
-}
-
-@keyframes border-animation-outside {
-  0% {
-    width: 25px;
-    height: 25px;
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    width: 48px;
-    height: 48px;
-    opacity: 0;
-  }
-}
-
-@keyframes border-animation-inside {
-  0% {
-    width: 25px;
-    height: 25px;
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    width: 48px;
-    height: 48px;
-    opacity: 0;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  :deep(.el-carousel__indicators--horizontal) {
-    bottom: initial;
-    top: 0;
-  }
-  .toggle-button {
-    display: flex !important;
-  }
-  .details {
-    &-container {
-      position: relative;
-      width: 100%;
-    }
-    &-left,
-    &-right {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100% !important;
-      height: 100% !important;
-      max-width: 100% !important;
-      max-height: 100% !important;
-      z-index: 1;
-    }
-    &-left {
-      border-radius: 10px 10px 0 0 !important;
-      z-index: 2;
-      &.no-media {
-        border-radius: 0 !important;
-        top: 0;
-      }
-      &.media {
-        top: $author_height;
-        transition: all 0.3s;
-        &.hide-comment {
-          top: calc(100% - $author_height);
-        }
-        .left {
-          &-center {
-            margin-bottom: 200px;
-          }
-          &-bottom {
-            transform: translateY(-$author_height);
-          }
-        }
-      }
-      .left {
-        &-top {
-          justify-content: space-between;
-          flex-direction: row-reverse;
-          :deep(.author-info-left) {
-            justify-content: space-between;
-            flex-direction: row-reverse;
-            .name {
-              align-items: flex-end !important;
-            }
-          }
-          &-back {
-            display: flex !important;
-            align-items: center;
-          }
-        }
-      }
-    }
-  }
-}
+@import "./index.scss";
 </style>

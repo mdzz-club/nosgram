@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-21 12:27:09
+ * @LastEditTime: 2023-03-26 22:29:00
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -26,6 +26,7 @@
     <additional-content :data="followerData" class="additional-content" />
   </section>
   <details-dialog ref="details-dialog" />
+  <release @success="_handleReleaseSuccess" ref="release-dialog" />
   <!-- 用于获取样式设置的高度，使用后隐藏 -->
   <div
     class="media-height"
@@ -40,14 +41,15 @@ import AdditionalContent from "@/components/AdditionalContent/index.vue";
 import Article from "@/components/Article/index.vue";
 import ArticleSkeleton from "@/components/ArticleSkeleton/index.vue";
 import DetailsDialog from "../Details/components/DetailsDialog/index.vue";
+import Release from "@/components/Release/index.vue";
 
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 
-import { deDuplication } from "@/common/js/nostr-tools/index";
+import { deDuplication } from "@/common/js/common";
 import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import { random } from "@/common/js/common";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
-import { loginModule } from "@/store/modules/login";
+import type { EventTemplate } from "nostr-tools";
 
 @Options({
   components: {
@@ -55,6 +57,7 @@ import { loginModule } from "@/store/modules/login";
     AdditionalContent,
     VirtualList,
     DetailsDialog,
+    Release,
   },
 })
 export default class Home extends mixins(NostrToolsMixins) {
@@ -71,18 +74,35 @@ export default class Home extends mixins(NostrToolsMixins) {
   }
   // 组装loading项，用于加载更多显示loading
   get virtualList() {
-    const result = [{ id: "client_virtualList_release" }].concat(this.listData);
+    const result: Record<
+      string,
+      string | ((params: number | boolean) => void)
+    >[] = [
+      {
+        id: "client_virtualList_release",
+        client_fn_release_dialog: this._releaseDialogToggle,
+      },
+    ].concat(this.listData);
     if (this.loading)
       return result.concat([{ id: "client_virtualList_loading" }]);
     else return result;
   }
+  _handleReleaseSuccess(params: EventTemplate) {
+    this._insertArticle(params);
+  }
+  _insertArticle(params: any, index = 0) {
+    this.listData.splice(index, 0, params);
+  }
   async _init() {
     await this._getData();
     // 获取右侧额外内容
-    await this._getAdditionalContent(this.virtualList, 5);
+    this._getAdditionalContent(this.virtualList, 5);
   }
-  _dialogToggle(params: mapOriginDataResult) {
+  _detailsDialogToggle(params: mapOriginDataResult) {
     (this.$refs["details-dialog"] as DetailsDialog)._toggle(true, params);
+  }
+  _releaseDialogToggle(params: boolean | number) {
+    (this.$refs["release-dialog"] as Release)._toggle(params);
   }
   _getMediaHeight() {
     setTimeout(() => {
@@ -104,34 +124,34 @@ export default class Home extends mixins(NostrToolsMixins) {
         {
           kinds: [1],
           until: this.pageUntil,
-          limit: 50,
+          limit: 5,
         },
       ],
     });
+    // 去重新旧获取的文章列表
     const newActivityData = deDuplication(
       this.listData,
-      activityData as {
-        id: string;
-        client_messageType: string;
-        created_at: number;
-      }[]
+      activityData as { id: string }[]
     );
+    // to do ！！！！这里还需要用本地存储把用户存储到本地，优化体验！！！！
+    // 设置动态中用户的信息
+    await this._getUser(activityData);
     // 获取动态的对应的互动
-    this._getInteraction(activityData);
+    await this._getInteraction(activityData);
     // 获取文章中转发的内容
-    this._getForward(activityData);
+    await this._getForward(activityData);
     // 获取文章的点赞信息，id
-    this._getLikes(activityData);
+    await this._getLikes(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
       .map((e: mapOriginDataResult) => ({
         ...e,
         client_mediaHeight: this.mediaHeight,
-        client_fn_details: this._dialogToggle,
+        client_fn_details: this._detailsDialogToggle,
       }));
     this.pageUntil = this.listData[this.listData.length - 1]
-      .created_at as number;
+      ?.created_at as number;
     return activityData;
   }
   async _getoOperation(author: string) {
@@ -184,12 +204,8 @@ export default class Home extends mixins(NostrToolsMixins) {
   }
   async _getData() {
     this.loading = true;
-    // 获取用户动态
-    const activityData = await this._getActivity();
+    await this._getActivity();
     this.loading = false;
-    // 设置动态中用户的信息！！！！这里还需要用本地存储把用户存储到本地，优化体验！！！！
-    await this._getUser(activityData);
-    console.log(this.listData);
   }
 }
 </script>

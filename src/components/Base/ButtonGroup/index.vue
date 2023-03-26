@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-18 16:49:52
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-19 22:17:08
+ * @LastEditTime: 2023-03-23 19:23:26
  * @FilePath: /nosgram/src/components/Base/ButtonGroup/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -115,7 +115,7 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
     const req = this.getLikeReq({ id, pubkey, client_likeId, privateKey });
     // 回填新增的点赞事件
     if (this.source.client_like) this.source.client_likeId = req.id;
-    await this._like(req);
+    await this._sendEvent(req);
     this.$emit(`${type}-click`);
   }
   async emit(type: string) {

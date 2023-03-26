@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-10 09:33:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-19 20:19:06
+ * @LastEditTime: 2023-03-24 15:51:21
  * @FilePath: /nosgram/src/components/comment/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -18,6 +18,9 @@
       <div class="comment-content">
         <div class="position-relative padding-right-20">
           <article-html :source="item" />
+          <el-button class="comment-button" @click="_reply(sourceIndex)" link
+            >回复</el-button
+          >
           <el-button
             v-if="item.client_moreComment !== -1"
             :disabled="item.client_moreComment === 2"
@@ -33,14 +36,14 @@
             <button-group size="14px" :source="item" :buttons="['good']" />
           </div>
         </div>
+        <!-- to do 需要支持评论回复查看更多功能 -->
         <div v-show="item.client_moreComment === 1">
           <Comment
             v-if="item.client_children"
             :emit="emit"
+            :reply="reply"
             :source="item.client_children"
-            :indexComment="`${
-              indexComment ? `${indexComment}-` : ''
-            }${sourceIndex}`"
+            :indexComment="_getIndexComment(sourceIndex)"
           />
         </div>
       </div>
@@ -85,6 +88,10 @@ interface Source extends mapOriginDataResult {
 class CommentProps {
   indexComment = prop<number>({ required: false, default: null });
   source = prop<Source[]>({ required: false, default: [] });
+  reply = prop<(params: string) => void>({
+    require: false,
+    default: undefined,
+  });
   emit = prop<(params: Source, index: number | null) => void>({
     require: false,
     default: undefined,
@@ -96,16 +103,23 @@ class CommentProps {
     Avatar,
     ArticleHtml,
     AuthorInfo,
+    ButtonGroup,
   },
 })
 export default class Comment extends Vue.with(CommentProps) {
+  _getIndexComment(index: number) {
+    return `${this.indexComment ? `${this.indexComment}-` : ""}${index}`;
+  }
+  _reply(params: number) {
+    this.reply(this._getIndexComment(params));
+  }
   _moreCommentButton(item: Source) {
     if (
       item.client_moreComment === Client_moreComment.hide ||
       item.client_moreComment === undefined
     )
       return "查看回复";
-    else if (item.client_moreComment === 2) return "加载中...";
+    else if (item.client_moreComment === 2) return "获取回复中...";
     else return "隐藏回复";
   }
   _emit(params: Source, index: number) {

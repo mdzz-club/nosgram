@@ -2,19 +2,27 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-14 15:22:13
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 21:04:38
+ * @LastEditTime: 2023-03-26 21:35:01
  * @FilePath: /nosgram/src/containers/ChatInputBox/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="chat-input-box-container">
     <div class="chat-input-box">
-      <div class="input-container">
-        <el-button open-emoji class="emoji-button" link @click="toggle"
-          ><el-icon size="40"><icon-ion-ios-happy /></el-icon
+      <div
+        class="input-container"
+        :class="{ 'align-items-center': verticalCenter }"
+      >
+        <el-button v-if="emojiButton" class="emoji-button" link @click="toggle"
+          ><el-icon size="30"><icon-ion-ios-happy /></el-icon
         ></el-button>
+        <slot name="before-input" />
         <div
           class="input-box"
+          :class="{
+            'full-width-important': !sendButton,
+            'align-items-center': verticalCenter,
+          }"
           contenteditable
           ref="input"
           @keyup="handleKeyup"
@@ -22,7 +30,10 @@
           @paste.prevent="onPaste"
           @click="getCursor"
         ></div>
-        <el-button @click="submit" class="send-button" link>发送</el-button>
+        <slot name="after-input" />
+        <el-button v-if="sendButton" @click="submit" class="send-button" link
+          >发送</el-button
+        >
       </div>
     </div>
     <div class="interaction-conmponent" v-if="openInteraction">
@@ -35,6 +46,7 @@
     </div>
     <div class="emoji-component" v-if="openEmoji">
       <emoji
+        :height="emojiHeight"
         @emoji-click-external="handleEmojiClickExternal"
         @emoji-click="emojiClick"
       />
@@ -62,7 +74,11 @@ interface KeyupEvent extends Event {
 })
 export default class ChatInputBox extends Vue {
   @Prop({ default: true }) isInteraction!: boolean;
-  @Prop({ default: "150px" }) interactionHeight!: string;
+  @Prop({ default: true }) emojiButton!: boolean;
+  @Prop({ default: true }) sendButton!: boolean;
+  @Prop({ default: true }) verticalCenter!: boolean;
+  @Prop({ default: "" }) placeholder!: string;
+  @Prop({ default: false }) allowedBlank!: boolean;
   @Prop({ default: "300px" }) emojiHeight!: string;
   editor: DOMElement | undefined = undefined;
   openEmoji = false;
@@ -70,19 +86,25 @@ export default class ChatInputBox extends Vue {
   cursorPosition = 0;
   interactionData: Record<string, string | number>[] = [];
   interactionMatchText = "";
-  interactionPosition: null | number = null; // 用于记录是哪个位置的@或者#符号触发的这次互动，若at符号不在位置，则取消这次互动
+  interactionKeyPosition: null | number = null; // 用于记录是哪个位置的@或者#符号触发的这次互动，若at符号不在位置，则取消这次互动
   interactionType: "@" | "#" = "@";
   timeout: number | null = null;
+  interactionForm: (string | Record<string, string>)[][] = [];
   mounted() {
     this.editor = this.$refs["input"];
   }
-  submit(e: any) {
-    const input = this.$refs.input;
+  getContent() {
+    return this.$refs["input"].innerHTML;
+  }
+  submit() {
+    const input = this.$refs["input"];
     const value = input.innerHTML.replace(/[\n\r]$/, "");
-    if (value) {
-      console.info("Submit text", { value });
-      input.innerText = "";
-    }
+    if (!value && !this.allowedBlank) return;
+    this.$emit("submit", {
+      content: value,
+      tags: this.interactionForm,
+    });
+    input.innerText = "";
   }
   async onPaste(e: unknown) {
     const result = await paste(e);
@@ -92,6 +114,10 @@ export default class ChatInputBox extends Vue {
     // } else {
     document.execCommand("insertText", false, result as string);
     // }
+  }
+  _clear() {
+    const input = this.$refs["input"];
+    input.innerText = "";
   }
   emojiClick(item: string) {
     this.insertEmoji(item);
@@ -114,7 +140,9 @@ export default class ChatInputBox extends Vue {
     this.cursorPosition = getCursorPosition(this.editor as DOMElement);
   }
   setInteractionData(data: Record<string, string | number>[]) {
-    this.$refs["interaction"] && this.$refs["interaction"].setLoading(false);
+    this.$nextTick(() => {
+      this.$refs["interaction"] && this.$refs["interaction"].setLoading(false);
+    });
     this.interactionData = data;
   }
   handleInteraction(e: KeyupEvent) {
@@ -123,7 +151,7 @@ export default class ChatInputBox extends Vue {
       this.openInteraction = true;
       this.openEmoji = false;
       this.interactionType = e.key;
-      this.interactionPosition = this.cursorPosition - 1;
+      this.interactionKeyPosition = this.cursorPosition - 1;
     }
   }
   interactionContentChange(e: any) {
@@ -131,10 +159,10 @@ export default class ChatInputBox extends Vue {
     if (
       /\s/.test(e.key) ||
       value === "" ||
-      this.interactionPosition === null ||
-      this.interactionPosition === undefined ||
-      (value.substr([this.interactionPosition as number], 1) !== "@" &&
-        value.substr([this.interactionPosition as number], 1) !== "#")
+      this.interactionKeyPosition === null ||
+      this.interactionKeyPosition === undefined ||
+      (value.substr([this.interactionKeyPosition as number], 1) !== "@" &&
+        value.substr([this.interactionKeyPosition as number], 1) !== "#")
     ) {
       this.openInteraction = false;
       return;
@@ -162,18 +190,21 @@ export default class ChatInputBox extends Vue {
         `${slice}${result}`
       );
     };
-    // 只有键盘输入或者删除字符需要emit
-    if (e.key === "Backspace" || e.key.length === 1) {
-      const content = findContent(
-        value,
-        this.cursorPosition - 1,
-        this.cursorPosition - 1,
-        this.interactionType
-      );
-      this.$emit("interaction-input", (content as Record<string, string>).text);
-      this.interactionMatchIndex = content;
-      if (content) this.$refs["interaction"].setLoading(true);
-    }
+    // 只有键盘输入\删除\粘贴字符需要emit
+    const content = findContent(
+      value,
+      this.cursorPosition - 1,
+      this.cursorPosition - 1,
+      this.interactionType
+    );
+    const { text } = content as Record<string, string>;
+    if (!text) return;
+    this.$emit("interaction-input", {
+      content: (content as Record<string, string>).text,
+      type: this.interactionType,
+    });
+    this.interactionMatchIndex = content;
+    if (content) this.$refs["interaction"].setLoading(true);
   }
   handleKeyup(e: KeyupEvent) {
     this.getCursor();
@@ -206,11 +237,23 @@ export default class ChatInputBox extends Vue {
     setCursorPosition(editor, this.cursorPosition + 1);
     this.cursorPosition = getCursorPosition(editor) + 1;
   }
+  setForm(data: Record<string, string | Record<string, string>>) {
+    // const { key, value, type } = data;
+    const { key, type, value, content } = data;
+    const form = [
+      type === "@" ? "p" : "t",
+      type === "@" ? value : key,
+      `${type}${key}`,
+      content,
+    ];
+    this.interactionForm.push(form);
+  }
   insertInteraction(params: Record<string, Record<string, string>>) {
     // 原字符串
     const { startIndex, endIndex } = this.interactionMatchIndex;
     // 用户点击的at对象
-    const { key } = params.params;
+    const { key, value, type } = params.params;
+    const { content } = params;
 
     const editor = this.editor as DOMElement;
     const editorText = editor.innerHTML;
@@ -218,6 +261,7 @@ export default class ChatInputBox extends Vue {
     const startStr = editorText.slice(0, startIndex);
     const endStr = editorText.slice(endIndex + 1, editorText.length);
     editor.innerHTML = `${startStr}${this.interactionType}${key}&nbsp;${endStr}`;
+    this.setForm({ key, value, type, content });
     setCursorPosition(editor, startIndex + key.length + 2);
     this.cursorPosition = getCursorPosition(editor);
   }
@@ -225,25 +269,33 @@ export default class ChatInputBox extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.input-placeholder {
+  position: absolute;
+  font-size: 16px;
+  padding: 5px;
+  width: 100%;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  &.verticalCenter {
+    bottom: 0;
+    margin: auto;
+  }
+}
+.interaction-conmponent,
 .emoji-component {
   position: absolute;
   z-index: 2;
-  left: 0;
-  bottom: 65px;
-  width: 80%;
-}
-.interaction-conmponent {
-  position: absolute;
-  left: 0;
-  bottom: 65px;
+  left: 0px;
+  top: 0;
+  transform: translateY(calc(-100% - 10px));
 }
 .chat-input-box {
   position: relative;
   height: 55px;
   border: solid 1px rgb(var(--border-color));
   border-radius: 100px;
-  width: calc(100% - 40px);
-  margin: auto auto 10px auto;
+  width: 100%;
   &-container {
     display: flex;
     position: relative;
@@ -251,14 +303,12 @@ export default class ChatInputBox extends Vue {
   }
   .input-container {
     display: flex;
-    align-items: center;
     height: 100%;
     .input-box {
       width: 85%;
       height: 90%;
       max-height: 55px;
       display: flex;
-      align-items: center;
       border: none;
       box-sizing: border-box;
       overflow: scroll;
@@ -268,7 +318,7 @@ export default class ChatInputBox extends Vue {
       outline: none;
       transition: all 0.3s;
       font-size: 16px;
-      line-height: 16px;
+      line-height: 1.1em;
       &:focus {
         max-height: 90px;
       }
@@ -288,12 +338,14 @@ export default class ChatInputBox extends Vue {
   .emoji-component,
   .interaction-conmponent {
     position: relative !important;
-    box-shadow: none;
     bottom: 0px;
+    left: 0;
     width: 100%;
+    transform: translateY(0);
     :deep(.emoji-container),
     :deep(.interaction-container) {
       width: 100%;
+      box-shadow: none;
     }
   }
 }
