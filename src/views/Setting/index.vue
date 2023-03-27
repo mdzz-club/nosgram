@@ -2,21 +2,21 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 12:57:14
+ * @LastEditTime: 2023-03-27 16:15:52
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="setting-container">
     <div class="setting">
-      <h2 class="align-left margin-bottom-20">设置</h2>
+      <h2 class="align-left margin-bottom-10">设置</h2>
       <div class="setting-left">
-        <div class="list">
+        <div class="list hover pointer">
           <div
             class="list-item"
             v-for="(item, index) in settingData"
             :key="index"
-            @click="_handLeftClick(item.key)"
+            @click="_handLeftClick(item)"
           >
             <div>
               <el-icon v-if="item.icon === 'logout'" size="20"
@@ -31,32 +31,244 @@
           </div>
         </div>
       </div>
-      <div class="setting-right" v-show="settingIndex">2</div>
+      <div class="setting-right" v-show="settingIndex">
+        <div v-show="settingIndex === 'relays'">
+          <div class="server-list">
+            <div class="list phone">
+              <div
+                class="list-item"
+                v-for="(relay, index) in relays"
+                :key="index"
+              >
+                <div>{{ relay.url }}</div>
+                <div>
+                  <div class="display-flex align-items-center">
+                    读：<el-switch
+                      class="margin-right-10"
+                      v-model="relay.read"
+                      inline-prompt
+                      active-text="是"
+                      inactive-text="否"
+                    />
+                    写：<el-switch
+                      v-model="relay.write"
+                      inline-prompt
+                      active-text="是"
+                      inactive-text="否"
+                    />
+                    <el-button
+                      link
+                      @click="relays.splice(index, 1)"
+                      class="margin-left-10"
+                    >
+                      <el-icon
+                        size="30"
+                        class="margin-right-5 server-icon close"
+                      >
+                        <icon-ion-md-add-circle-outline />
+                      </el-icon>
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="server-form"
+              :class="{
+                'justify-center': create === 0,
+                'justify-between': create === 1,
+              }"
+            >
+              <div class="width-300" v-show="create === 1">
+                <el-input
+                  v-model="form.url"
+                  :placeholder="`请输入服务器地址，如：${relays?.[0]?.url}`"
+                  clearable
+                />
+              </div>
+              <div
+                class="display-flex align-items-center"
+                :class="{
+                  'justify-bottom': create === 1,
+                  'justify-center': create === 0,
+                }"
+              >
+                <div
+                  class="display-flex align-items-center"
+                  v-show="create === 1"
+                >
+                  读：<el-switch
+                    class="margin-right-10"
+                    v-model="form.read"
+                    inline-prompt
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                  写：<el-switch
+                    v-model="form.write"
+                    inline-prompt
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                </div>
+                <el-button
+                  type="primary"
+                  class="margin-left-20"
+                  v-show="create === 1"
+                  @click="_createServer"
+                  >新增</el-button
+                >
+                <el-button link @click="_serverIconClick">
+                  <el-icon
+                    size="30"
+                    class="margin-right-5 server-icon"
+                    :class="{ close: create === 1 }"
+                  >
+                    <icon-ion-md-add-circle-outline />
+                  </el-icon>
+                  <span v-show="create === 0">新增收发信息服务器</span>
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <el-button @click="_sendRelays" class="full-width" type="primary"
+            >保存以上收发信息服务器变更</el-button
+          >
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Vue } from "vue-class-component";
+import { mixins } from "vue-class-component";
+import { loginModule } from "@/store/modules/login";
+import { ElMessageBox, ElMessage } from "element-plus";
+import "element-plus/es/components/message-box/style/css";
+import "element-plus/es/components/message/style/css";
+import type { Relay } from "@/common/js/relays/relays.d";
+import { finishEvent } from "nostr-tools";
+import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 
-export default class Setting extends Vue {
+enum Create {
+  button,
+  create,
+}
+
+interface Form {
+  url: "";
+  write: boolean;
+  read: boolean;
+}
+
+export default class Setting extends mixins(NostrToolsMixins) {
   settingIndex = "";
-  settingData = [
-    {
-      name: "收发信息服务器",
-      alias: "中继列表",
-      key: "relays",
-      icon: "server",
-    },
-    { name: "登出", key: "logout", icon: "logout" },
-  ];
-  _handLeftClick(item: string) {
-    this.settingIndex = item;
+  relays: Relay[] = [];
+  create = Create.button;
+  loading = false;
+  form: Form = {
+    url: "",
+    write: true,
+    read: true,
+  };
+  // settingData = [
+  //   {
+  //     name: "收发信息服务器",
+  //     alias: "中继列表",
+  //     key: "relays",
+  //     icon: "server",
+  //   },
+  //   { name: "登出", key: "logout", icon: "logout" },
+  // ];
+  get settingData() {
+    const result = [
+      {
+        name: "收发信息服务器",
+        alias: "中继列表",
+        key: "relays",
+        icon: "server",
+      },
+    ];
+    if (loginModule.isLogin) {
+      result.push({ name: "登出", key: "logout", icon: "logout", alias: "" });
+    }
+    return result;
+  }
+  async _sendRelays() {
+    if (this.loading) return;
+    const params: Record<string, Record<string, boolean>> = {};
+    this.relays.forEach((e) => {
+      params[e.url] = { write: e.write, read: e.read };
+    });
+    const { privateKey } = loginModule.userInfo;
+    this.loading = true;
+    const form = finishEvent(
+      {
+        kind: 2,
+        content: JSON.stringify(params),
+        created_at: ~~(Date.now() / 1000),
+        tags: [],
+      },
+      privateKey as string
+    );
+    await this._sendEvent(form);
+    loginModule.setUserRelays(this.relays);
+    this.loading = false;
+  }
+  _clearForm() {
+    this.form = {
+      url: "",
+      write: true,
+      read: true,
+    };
+  }
+  _createServer() {
+    if (!this.form.url) return ElMessage.warning("请输入新增中继url");
+    this.relays.push({ ...this.form, alias: "" });
+    this._clearForm();
+  }
+  _serverIconClick() {
+    this.create = { 0: 1, 1: 0 }[this.create];
+    if (this.create === 0) this._clearForm();
+  }
+  async _logout() {
+    const res = await ElMessageBox.confirm("确认登出您的账号吗?", "Warning", {
+      confirmButtonText: "确认",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+    if (res) loginModule.logout();
+  }
+  _handLeftClick(item: Record<string, string | undefined>) {
+    const { key } = item;
+    if (key === "logout") {
+      this._logout();
+      return;
+    } else if (key === "relays") {
+      this.relays = JSON.parse(
+        JSON.stringify(
+          loginModule.userRelays.filter((e) => !e.delete) as Relay[]
+        )
+      );
+    }
+    this.settingIndex = key as string;
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.server {
+  &-form {
+    padding-top: 30px;
+    display: flex;
+    align-items: center;
+  }
+  &-icon {
+    &.close {
+      transform: rotate(45deg);
+    }
+  }
+}
 .setting {
   width: calc(
     var(--content_width) + var(--content-right-spacing_width) +
@@ -67,9 +279,9 @@ export default class Setting extends Vue {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    padding: 20px;
   }
-  &-left,
-  &-right {
+  &-left {
     width: 100%;
     border: solid 1px rgb(var(--border-color));
     border-radius: 5px;
@@ -80,7 +292,16 @@ export default class Setting extends Vue {
     margin-bottom: 20px;
   }
   &-right {
-    padding: 20px;
+    & > div {
+      .server-list {
+        border-radius: 5px;
+        border: solid 1px rgb(var(--border-color));
+        box-shadow: 0 1px 2px var(--container-box_shadow-clor);
+        background: rgb(var(--container-color));
+        padding: 20px;
+        margin-bottom: 10px;
+      }
+    }
   }
 }
 
@@ -91,10 +312,6 @@ export default class Setting extends Vue {
     align-items: center;
     justify-content: space-between;
     height: 50px;
-    cursor: pointer;
-    &:hover {
-      opacity: 0.5;
-    }
     & > div {
       display: flex;
       align-items: center;
@@ -104,6 +321,60 @@ export default class Setting extends Vue {
     }
     & + .list-item {
       border-top: solid 1px rgb(var(--border-color));
+    }
+  }
+  &.pointer {
+    .list-item {
+      cursor: pointer;
+    }
+  }
+  &.hover {
+    .list-item {
+      &:hover {
+        opacity: 0.5;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 998px) {
+  .setting {
+    &-left {
+      margin-bottom: 10px;
+    }
+    &-container {
+      padding: 10px;
+    }
+  }
+
+  .setting {
+    width: 100%;
+  }
+  .server {
+    &-list {
+      padding: 10px 5px !important;
+    }
+    &-form {
+      display: block;
+      & > div {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
+  }
+  .phone.list {
+    height: 200px;
+    overflow-y: auto;
+    .list-item {
+      display: block;
+      height: initial;
+      & > div:last-of-type {
+        display: flex;
+        justify-content: flex-end;
+      }
+      & + .list-item {
+        padding-top: 10px;
+      }
     }
   }
 }

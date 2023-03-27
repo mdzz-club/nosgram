@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 21:31:07
+ * @LastEditTime: 2023-03-27 12:31:50
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -201,12 +201,12 @@ export default class Details extends mixins(
   reply: Author | null = null;
   replyIndex: null | string = null;
   @Watch("source")
+  onSourceChanged() {
+    this._getComment();
+  }
   _getAuthor(params: Author) {
     const result = getAuthor(params as Author).author as string;
     return result && result.length > 4 ? `${result.slice(0, 4)}...` : result;
-  }
-  onSourceChanged() {
-    this._getComment();
   }
   async mounted() {
     if (!this.isComponent) await this.getSource();
@@ -306,7 +306,7 @@ export default class Details extends mixins(
     // const activityDetailsRandom = this.randomEventId("activity-details");
     const activityDetailsData: mapOriginDataResult[] =
       await nostrToolsModule.ns_send({
-        url: this.defaultRelays,
+        url: loginModule.readRelays,
         params: [
           "REQ",
           this.randomEventId("activity-details"),
@@ -338,7 +338,7 @@ export default class Details extends mixins(
     // const detailsRandom = this.randomEventId("activity-comment");
     this._setLoading(params, loading);
     const commentData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("activity-comment"),
@@ -351,7 +351,7 @@ export default class Details extends mixins(
       ],
     });
     // 获取用户信息
-    await this._getUser(commentData);
+    await this._setUser(commentData);
     // 获取点赞信息
     await this._getLikes(commentData);
     // 获取动态的对应的互动

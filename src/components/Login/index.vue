@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-15 16:49:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-17 21:08:31
+ * @LastEditTime: 2023-03-27 17:43:56
  * @FilePath: /nosgram/src/components/Login/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -162,6 +162,9 @@ import { getKeyType } from "@/common/js/nostr-tools/index";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import { ElMessage, UploadRawFile } from "element-plus";
 import "element-plus/es/components/message/style/css";
+import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
+import relays from "@/common/js/relays";
+import type { Relay } from "@/common/js/relays/relays.d";
 // nip06.generateSeedWords() 生成助记词
 // nip06.privateKeyFromSeedWords(使用上面助记词) 生成密钥
 // nip06.validateWords(助记词) 用于校验输入是否合规
@@ -213,19 +216,7 @@ export default class Login extends mixins(NostrToolsMixins) {
   }
   async _getUserInfo(author: string) {
     loginModule.setUserInfoLoad(true);
-    const res = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
-      params: [
-        "REQ",
-        this.randomEventId("user"),
-        {
-          kinds: [0],
-          until: ~~(Date.now() / 1000),
-          limit: 1,
-          authors: [author],
-        },
-      ],
-    });
+    const res = await this._getUser([author]);
     loginModule.setUserInfoLoad(false);
     this._reset();
     if (res) {
@@ -245,6 +236,39 @@ export default class Login extends mixins(NostrToolsMixins) {
       publicKey,
       readOnly: false,
     });
+  }
+  async _getUserRelays(publicKey: string) {
+    const res = await nostrToolsModule.ns_send({
+      url: loginModule.readRelays,
+      params: [
+        "REQ",
+        this.randomEventId("relays"),
+        {
+          kinds: [2],
+          until: ~~(Date.now() / 1000),
+          authors: [publicKey],
+          limit: 1,
+        },
+      ],
+    });
+
+    let item: mapOriginDataResult = {};
+    res.forEach((e: mapOriginDataResult) => {
+      if (!item?.created_at || item.created_at < (e.created_at as number))
+        item = e;
+    });
+    if (item?.content) {
+      const keys = Object.keys(item.content);
+      const result: Relay[] = [];
+      keys.forEach((e) => {
+        const { write, read } = (
+          item.content as Record<string, Record<string, boolean>>
+        )[e];
+
+        result.push({ url: e, write, read });
+      });
+      loginModule.setRelays(result);
+    } else loginModule.setRelays(relays);
   }
   async getNip05PublicKey(params: string) {
     const [name, api] = params.split("@");
@@ -279,6 +303,7 @@ export default class Login extends mixins(NostrToolsMixins) {
     loginModule.toggle(false);
 
     this._getUserInfo(loginParams.publicKey as string);
+    this._getUserRelays(loginParams.publicKey as string);
   }
   async _submit() {
     this.loginLoading = true;

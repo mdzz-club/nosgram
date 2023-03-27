@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 14:17:04
+ * @LastEditTime: 2023-03-27 10:22:08
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -41,6 +41,7 @@
 
 <script lang="ts">
 import { Vue, Options, prop } from "vue-class-component";
+import { Watch } from "vue-property-decorator";
 import ArticleVideo from "../ArticleVideo/index.vue";
 import ArticleMedia from "../ArticleMedia/index.vue";
 import ArticleForward from "../ArticleForward/index.vue";

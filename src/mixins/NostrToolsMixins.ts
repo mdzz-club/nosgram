@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 13:53:11
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 22:28:51
+ * @LastEditTime: 2023-03-27 19:58:09
  * @FilePath: /nosgram/src/mixins/nostrToolsMixins.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -25,7 +25,7 @@ export default class nostrToolsMixins extends Vue {
   async _getInteraction(activityData: mapOriginDataResult[]) {
     const authors: string[] = [...new Set(setInteraction(activityData))];
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("interaction"),
@@ -51,34 +51,109 @@ export default class nostrToolsMixins extends Vue {
       }
     });
   }
-  async _getUser(activityData: mapOriginDataResult[]) {
-    const userList = activityData
+  async _setUser(data: mapOriginDataResult[]) {
+    const userList = data
       .filter((e: mapOriginDataResult) => e.client_messageType !== "EOSE")
       .map((e: mapOriginDataResult) => e.pubkey);
-    const authors = [...new Set(userList)];
-    // 获取动态对应用户的信息
-    // const userRandom = this.randomEventId("user");
-    const userData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
-      params: [
-        "REQ",
-        this.randomEventId("user"),
-        {
-          kinds: [0],
-          until: ~~(Date.now() / 1000),
-          limit: authors.length,
-          authors,
-        },
-      ],
-    });
-    activityData.forEach((item: mapOriginDataResult) => {
+    const userData: mapOriginDataResult[] = await this._getUser(
+      userList as string[]
+    );
+    data.forEach((item) => {
       userData.some((user) => {
         if (item.pubkey === user.pubkey) {
-          item.client_userInfo = user as Client_userInfo;
+          (item as Record<string, Client_userInfo>)["client_userInfo"] =
+            user as Client_userInfo;
           return true;
         } else return false;
       });
     });
+  }
+  async _getUser(data: string[]): Promise<mapOriginDataResult[]> {
+    let userData: mapOriginDataResult[] = [];
+    const authors = [...new Set(data)]; // 这一次需要获取到的用户列表
+    let reqList: string[] = []; // 需要远程请求的用户列表
+    const localUserData: mapOriginDataResult[] = []; // 本地缓存下来对应需要使用的用户列表
+    // 本地存储获取缓存的用户列表
+    const localforage_userData =
+      (await window.localforage.getItem("user_list")) || [];
+    if (localforage_userData?.length) {
+      // 过滤出需要请求的列表
+      authors.forEach((e) => {
+        let item = null;
+        localforage_userData.some((user: mapOriginDataResult) => {
+          if (e === user.pubkey) {
+            localUserData.push(user);
+            item = user;
+            return true;
+          } else return false;
+        });
+        if (!item) reqList.push(e as string);
+      });
+    } else reqList = authors as string[];
+    if (reqList.length) {
+      // 获取动态对应用户的信息
+      userData = await nostrToolsModule.ns_send({
+        url: loginModule.readRelays,
+        params: [
+          "REQ",
+          this.randomEventId("user"),
+          {
+            kinds: [0],
+            until: ~~(Date.now() / 1000),
+            limit: reqList.length,
+            authors: reqList,
+          },
+        ],
+      });
+      const parse = JSON.parse(
+        JSON.stringify(localforage_userData.concat(userData))
+      );
+      window.localforage.setItem("user_list", parse);
+    }
+    return (userData || []).concat(localUserData);
+
+    // data.forEach((item) => {
+    //   const someData = (userData || []).concat(localUserData);
+    //   someData.some((user) => {
+    //     if (item.pubkey === user.pubkey) {
+    //       (item as Record<string, Client_userInfo>)[key] =
+    //         user as Client_userInfo;
+    //       return true;
+    //     } else return false;
+    //   });
+    // });
+    // return data;
+  }
+  // 获取关注列表
+  async _getFollow() {
+    if (!loginModule.isLogin) return;
+    const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
+      url: loginModule.readRelays,
+      params: [
+        "REQ",
+        this.randomEventId("follow-list"),
+        {
+          kinds: [3],
+          authors: [loginModule.userInfo.publicKey],
+          until: ~~(Date.now() / 1000),
+        },
+      ],
+    });
+    let item: mapOriginDataResult = {};
+    res.forEach((e) => {
+      if (
+        !item?.id ||
+        (item.id && (item.created_at as number) < (e.created_at as number))
+      )
+        item = e;
+    });
+    const result: Record<string, string[]> = {};
+    if (item?.id) {
+      item.tags?.forEach((e) => {
+        result[e[1]] = e;
+      });
+    }
+    loginModule.setUserFollow(result);
   }
   // 获取转发内容
   async _getForward(activityData: mapOriginDataResult[]) {
@@ -96,7 +171,7 @@ export default class nostrToolsMixins extends Vue {
     });
     // 获取转发的具体文章信息
     const forward: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("forward"),
@@ -108,7 +183,7 @@ export default class nostrToolsMixins extends Vue {
     // 获取动态对应的互动
     await this._getInteraction(forward);
     // 获取转发的具体用户信息
-    await this._getUser(forward);
+    await this._setUser(forward);
     if (forward?.length) {
       activityData.forEach((e) => {
         if (e.client_tags) {
@@ -135,7 +210,7 @@ export default class nostrToolsMixins extends Vue {
     if (!loginModule.isLogin) return;
     const ids = activityData.map((e) => e.id);
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("user-likes"),
@@ -161,7 +236,7 @@ export default class nostrToolsMixins extends Vue {
   }
   async _sendEvent(req: EventTemplate) {
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.writeRelays,
       params: ["EVENT", req],
     });
     if (res) {

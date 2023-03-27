@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 22:29:00
+ * @LastEditTime: 2023-03-27 19:32:45
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -50,6 +50,7 @@ import type { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d"
 import { random } from "@/common/js/common";
 import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import type { EventTemplate } from "nostr-tools";
+import { loginModule } from "@/store/modules/login";
 
 @Options({
   components: {
@@ -94,9 +95,12 @@ export default class Home extends mixins(NostrToolsMixins) {
     this.listData.splice(index, 0, params);
   }
   async _init() {
+    // 若登录获取关注的人，获取文章中关注状态
+    await this._getFollow();
+
     await this._getData();
     // 获取右侧额外内容
-    this._getAdditionalContent(this.virtualList, 5);
+    await this._getAdditionalContent(this.virtualList, 5);
   }
   _detailsDialogToggle(params: mapOriginDataResult) {
     (this.$refs["details-dialog"] as DetailsDialog)._toggle(true, params);
@@ -116,8 +120,8 @@ export default class Home extends mixins(NostrToolsMixins) {
   }
   async _getActivity() {
     // 获取动态
-    const activityData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+    let activityData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("user-activity"),
@@ -133,15 +137,14 @@ export default class Home extends mixins(NostrToolsMixins) {
       this.listData,
       activityData as { id: string }[]
     );
-    // to do ！！！！这里还需要用本地存储把用户存储到本地，优化体验！！！！
     // 设置动态中用户的信息
-    await this._getUser(activityData);
-    // 获取动态的对应的互动
-    await this._getInteraction(activityData);
+    await this._setUser(activityData);
     // 获取文章中转发的内容
     await this._getForward(activityData);
     // 获取文章的点赞信息，id
     await this._getLikes(activityData);
+    // 获取动态的对应的互动
+    await this._getInteraction(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
@@ -152,11 +155,10 @@ export default class Home extends mixins(NostrToolsMixins) {
       }));
     this.pageUntil = this.listData[this.listData.length - 1]
       ?.created_at as number;
-    return activityData;
   }
   async _getoOperation(author: string) {
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
-      url: this.defaultRelays,
+      url: loginModule.readRelays,
       params: [
         "REQ",
         this.randomEventId("user-operation"),

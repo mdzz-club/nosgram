@@ -135,7 +135,7 @@
   }
 }
 
-@for $i from 30 through 200 {
+@for $i from 30 through 300 {
   .width-#{$i} {
     width: #{$i}px;
   }
