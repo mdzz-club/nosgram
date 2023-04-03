@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-15 16:49:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 17:43:56
+ * @LastEditTime: 2023-03-30 22:02:53
  * @FilePath: /nosgram/src/components/Login/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -312,11 +312,13 @@ export default class Login extends mixins(NostrToolsMixins) {
     let privateKey = "";
     let publicKey = "";
     const loginParams: UserInfo = { readOnly: false };
-    if (!type)
+    if (!type) {
+      this.loginLoading = false;
       return ElMessage({
         type: "error",
         message: "您输入的口令/nsec/npub/nip-05/hex有误",
       });
+    }
     if (type === "mnemonic") {
       this.loginLoading = false;
       return this._mnemonicLogin(this.password);
@@ -453,8 +455,9 @@ export default class Login extends mixins(NostrToolsMixins) {
     z-index: 1;
     font-size: 14px;
     padding: 5px 10px;
-    box-shadow: rgb(var(--dialog-box-shadow));
-    border: solid 1px rgb(var(--border-color));
+    // box-shadow: rgb(var(--dialog-box-shadow));
+    box-shadow: 0 1px 10px var(--container-box_shadow-clor);
+    // border: solid 1px rgb(var(--border-color));
     border-radius: 5px;
     &::before {
       content: "";

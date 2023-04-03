@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-28 18:39:26
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-14 11:02:44
+ * @LastEditTime: 2023-03-30 16:07:29
  * @FilePath: /nosgram/src/views/Home/components/ArticleMedia/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -37,6 +37,7 @@
           :imgWidth="imgWidth"
           :imgHeight="imgHeight"
           :data="photo"
+          :objectFit="imgObjectFit"
         />
       </el-carousel-item>
     </el-carousel>
@@ -62,6 +63,7 @@ class ArticleMediaProps {
   imgWidth = prop<string>({ required: false, default: "initial" });
   imgHeight = prop<string>({ required: false, default: "100%" });
   arrow = prop<string>({ required: false, default: "" });
+  imgObjectFit = prop<string>({ required: false, default: "contain" });
 }
 
 @Options({
@@ -97,4 +99,10 @@ export default class ArticleMedia extends Vue.with(ArticleMediaProps) {
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.media {
+  &-container {
+    width: 100%;
+  }
+}
+</style>

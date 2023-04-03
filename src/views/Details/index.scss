@@ -80,7 +80,7 @@ $author_height: 70px;
         &-center {
           height: calc(100% - $author_height);
           padding: 0 10px 0 20px;
-          overflow-y: scroll;
+          overflow-y: auto;
           margin-bottom: 120px;
         }
         &-bottom {

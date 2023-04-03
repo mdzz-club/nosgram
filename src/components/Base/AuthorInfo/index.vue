@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 10:34:08
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 10:30:41
+ * @LastEditTime: 2023-04-02 19:42:10
  * @FilePath: /nosgram/src/components/Base/AuthorInfo/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -21,10 +21,16 @@
       </avatar-component>
       <div class="name">
         <div class="display-flex align-items-center">
-          <el-button link v-if="showName">
-            <span class="font-weight-600 font-size-16 default-font-color">{{
-              name || author.author
-            }}</span>
+          <el-button
+            @click="toUserPage"
+            link
+            class="margin-bottom-5-important"
+            v-if="showName"
+          >
+            <span
+              class="font-weight-600 font-size-16 default-font-color name-omit"
+              >{{ name || author.author }}</span
+            >
           </el-button>
           <p
             class="second-font-color font-weight-600 font-size-12 margin-left-5"
@@ -49,7 +55,7 @@ import { Prop } from "vue-property-decorator";
 import { getAuthor, resetTime } from "@/common/js/nostr-tools/index";
 import type { AuthorInfoSource } from "./AuthorInfo.d";
 import AvatarComponent from "../Avatar/index.vue";
-import { Author } from "@/common/js/nostr-tools/nostr-tools";
+import { Author } from "@/common/js/nostr-tools/nostr-tools.d";
 
 @Options({
   components: {
@@ -70,6 +76,9 @@ export default class AuthorInfo extends Vue {
   mounted() {
     this.slot = this.$slots;
   }
+  toUserPage() {
+    this.$router.push({ name: "user", params: { id: this.source.pubkey } });
+  }
   get author() {
     return getAuthor(this.source as Author, this.userInfoKey);
   }
@@ -80,6 +89,13 @@ export default class AuthorInfo extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.name-omit {
+  max-width: 200px;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .author-info {
   &-container {
     display: flex;

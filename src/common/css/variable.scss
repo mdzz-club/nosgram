@@ -36,6 +36,7 @@ $phone-media-screen: 480px;
   --article-bg-color: 255, 255, 255;
   --article-media-height: 500px;
   --article-box_shadow-clor: rgba(0, 0, 0, 0.1);
+  --article-type-media-size: 480px;
 
   --content-container-padding: 0;
   --content-border: solid 1px rgb(var(--border-color));
@@ -54,6 +55,9 @@ $phone-media-screen: 480px;
   --release-dialog-width: 650px;
   --release-dialog-height: 500px;
   --release-dialog-details-height: 450px;
+
+  --edit-user_info-dialog-width: 600px;
+  --edit-user_info-dialog-height: 600px;
 }
 
 @media screen and (min-width: 1120px) {

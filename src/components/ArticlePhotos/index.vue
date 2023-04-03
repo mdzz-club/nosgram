@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-28 18:39:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-09 22:25:09
+ * @LastEditTime: 2023-03-30 15:47:04
  * @FilePath: /nosgram/src/views/Home/components/ArticlePhotos/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -10,7 +10,7 @@
   <div class="img-container">
     <img
       v-if="!damaged && imgUrl"
-      :style="`width: ${imgWidth};height: ${imgHeight}`"
+      :style="`width: ${imgWidth};height: ${imgHeight};object-fit: ${objectFit}`"
       :src="imgUrl"
       alt="img"
     />
@@ -30,6 +30,7 @@ class ArticlePhotosProps {
   data = prop<string>({ required: true, default: "" });
   imgWidth = prop<string>({ required: false, default: "initial" });
   imgHeight = prop<string>({ required: false, default: "100%" });
+  objectFit = prop<string>({ required: false, default: "contain" });
 }
 // @Options({
 //   watch: {
@@ -69,8 +70,5 @@ export default class ArticlePhotos extends Vue.with(ArticlePhotosProps) {
   height: 100%;
   display: flex;
   justify-content: center;
-  & > img {
-    object-fit: contain;
-  }
 }
 </style>

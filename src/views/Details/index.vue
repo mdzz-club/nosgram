@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 12:31:50
+ * @LastEditTime: 2023-03-29 11:26:58
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -44,8 +44,15 @@
               /></el-icon>
             </div>
           </template>
-          <el-button class="margin-left-0-important" link type="primary">
-            <span class="font-size-14">关注</span>
+          <el-button
+            @click="_follow"
+            class="margin-left-0-important"
+            link
+            type="primary"
+          >
+            <span class="font-size-14">
+              {{ viewData.client_follow ? "已关注" : "关注" }}
+            </span>
           </el-button>
         </author-info>
         <div class="left-top-back">
@@ -188,6 +195,7 @@ export default class Details extends mixins(
   @Prop({ default: false }) isComponent!: boolean;
   @Prop({ default: {} }) source!: Source;
   @Prop({ default: null }) closeDialog!: null | ((params: boolean) => void);
+  @Prop({ default: undefined }) followFn!: () => void;
   mediaHeight = 0;
   commentData: mapOriginDataResult[] = [];
   detailsSource: Source = {};
@@ -203,6 +211,11 @@ export default class Details extends mixins(
   @Watch("source")
   onSourceChanged() {
     this._getComment();
+  }
+  _follow() {
+    this._setFollow(this.viewData);
+    if (this.followFn) this.followFn();
+    else this.viewData.client_follow = !this.viewData.client_follow;
   }
   _getAuthor(params: Author) {
     const result = getAuthor(params as Author).author as string;

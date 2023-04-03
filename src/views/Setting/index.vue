@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 16:15:52
+ * @LastEditTime: 2023-04-03 19:14:13
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -118,7 +118,7 @@
                   @click="_createServer"
                   >新增</el-button
                 >
-                <el-button link @click="_serverIconClick">
+                <el-button v-if="isLogin" link @click="_serverIconClick">
                   <el-icon
                     size="30"
                     class="margin-right-5 server-icon"
@@ -149,6 +149,7 @@ import "element-plus/es/components/message/style/css";
 import type { Relay } from "@/common/js/relays/relays.d";
 import { finishEvent } from "nostr-tools";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
+import relays from "@/common/js/relays";
 
 enum Create {
   button,
@@ -180,6 +181,9 @@ export default class Setting extends mixins(NostrToolsMixins) {
   //   },
   //   { name: "登出", key: "logout", icon: "logout" },
   // ];
+  get isLogin() {
+    return loginModule.isLogin;
+  }
   get settingData() {
     const result = [
       {
@@ -238,6 +242,8 @@ export default class Setting extends mixins(NostrToolsMixins) {
       type: "warning",
     });
     if (res) loginModule.logout();
+    this.relays = relays;
+    // to do 登出后需要重写写中继逻辑
   }
   _handLeftClick(item: Record<string, string | undefined>) {
     const { key } = item;
@@ -283,10 +289,10 @@ export default class Setting extends mixins(NostrToolsMixins) {
   }
   &-left {
     width: 100%;
-    border: solid 1px rgb(var(--border-color));
+    // border: solid 1px rgb(var(--border-color));
     border-radius: 5px;
     background: rgb(var(--container-color));
-    box-shadow: 0 1px 2px var(--container-box_shadow-clor);
+    box-shadow: 0 1px 10px var(--container-box_shadow-clor);
   }
   &-left {
     margin-bottom: 20px;
@@ -295,8 +301,8 @@ export default class Setting extends mixins(NostrToolsMixins) {
     & > div {
       .server-list {
         border-radius: 5px;
-        border: solid 1px rgb(var(--border-color));
-        box-shadow: 0 1px 2px var(--container-box_shadow-clor);
+        // border: solid 1px rgb(var(--border-color));
+        box-shadow: 0 1px 10px var(--container-box_shadow-clor);
         background: rgb(var(--container-color));
         padding: 20px;
         margin-bottom: 10px;

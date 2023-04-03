@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:53
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-20 20:06:32
+ * @LastEditTime: 2023-03-30 22:02:22
  * @FilePath: /nosgram/src/views/Home/components/FollowerList/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -125,7 +125,7 @@ export default class FollowerList extends Vue.with(FollowerListProps) {
   background: rgb(var(--additional-bg-clor));
   padding: 10px 15px 10px 15px;
   border-radius: 5px;
-  border: solid 1px rgb(var(--border-color));
-  box-shadow: 0 1px 2px var(--article-box_shadow-clor);
+  // border: solid 1px rgb(var(--border-color));
+  box-shadow: 0 1px 10px var(--container-box_shadow-clor);
 }
 </style>

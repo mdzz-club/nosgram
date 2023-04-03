@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 21:34:08
+ * @LastEditTime: 2023-04-03 19:16:29
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -195,7 +195,7 @@ export const processingContent = (params: string) => {
   }
   if (links?.length)
     result.client_links = links.map((e: string) => mapALabelLink(e));
-  // to do 需要定位2个问题，有时候有图片链接不识别
+  // to do 有时候有图片链接不识别
   result.content = md;
   return result;
 };
@@ -283,7 +283,7 @@ export const resetTime = (time: number | undefined, nullText = "刚刚") => {
 };
 
 export const getAuthor = (
-  obj: Author,
+  obj: Author | Client_userInfo,
   key = "client_userInfo"
 ): Record<string, string | undefined | number> => {
   const result: Record<string, string | undefined | number> = {};
@@ -291,8 +291,9 @@ export const getAuthor = (
     result.iconName = (obj as Record<string, string>).pubkey;
     let icon = "";
     let author = "";
-    if (obj[key] && (obj[key] as Client_userInfo).content) {
-      const content = (obj[key] as Client_userInfo).content;
+    const keyObj = key === "content" ? obj : (obj as Author)[key];
+    if (keyObj && (keyObj as Client_userInfo).content) {
+      const content = (keyObj as Client_userInfo).content;
       icon = content.picture as string;
       author =
         (content.display_name as string) ||

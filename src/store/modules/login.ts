@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 19:56:35
+ * @LastEditTime: 2023-04-03 19:12:24
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -10,6 +10,7 @@ import { VuexModule, Module, Mutation, Action } from "vuex-class-modules";
 import store from "../index";
 import type { Client_userInfo } from "@/common/js/nostr-tools/nostr-tools.d";
 import type { Relay } from "@/common/js/relays/relays.d";
+import relays from "@/common/js/relays";
 
 export type UserInfoDetails = Record<
   string,
@@ -74,8 +75,8 @@ class LoginModule extends VuexModule {
           ...params,
           readOnly: params.privateKey ? false : true,
         }
-      : {};
-    const isLogin = params?.publicKey ? true : false;
+      : { publicKey: undefined };
+    const isLogin = userInfo?.publicKey ? true : false;
     this.userInfo = userInfo;
     this.isLogin = isLogin;
     if (localStorage) {
@@ -121,7 +122,7 @@ class LoginModule extends VuexModule {
   @Action
   logout() {
     this.setUserInfo(null);
-    this.setUserRelays([]);
+    this.setUserRelays(relays);
   }
 }
 

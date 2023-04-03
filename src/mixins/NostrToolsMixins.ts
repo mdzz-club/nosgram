@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 13:53:11
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 19:58:09
+ * @LastEditTime: 2023-04-03 17:01:15
  * @FilePath: /nosgram/src/mixins/nostrToolsMixins.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -18,12 +18,14 @@ import { nostrToolsModule } from "@/store/modules/nostr-tools";
 import { loginModule } from "@/store/modules/login";
 import type { EventTemplate } from "nostr-tools";
 import { setInteraction } from "@/common/js/nostr-tools";
+import { finishEvent } from "nostr-tools";
 
 export default class nostrToolsMixins extends Vue {
   defaultRelays = JSON.parse(JSON.stringify(relays)).map((e: Relay) => e.url);
   // 获取动态中存在at的情况的真实用户信息
   async _getInteraction(activityData: mapOriginDataResult[]) {
     const authors: string[] = [...new Set(setInteraction(activityData))];
+    if (!authors?.length) return;
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: loginModule.readRelays,
       params: [
@@ -68,11 +70,22 @@ export default class nostrToolsMixins extends Vue {
       });
     });
   }
-  async _getUser(data: string[]): Promise<mapOriginDataResult[]> {
+  /**
+   * @method _getUser 获取用户信息
+   * @param data {Array} 需要获取信息的数组
+   * @param cover {Boolean} 是否需要全部远程拉取数据
+   * @returns 用户列表
+   */
+  async _getUser(
+    data: string[],
+    cover = false
+  ): Promise<mapOriginDataResult[]> {
     let userData: mapOriginDataResult[] = [];
-    const authors = [...new Set(data)]; // 这一次需要获取到的用户列表
+    const authors = [...new Set(data)]; // 调用方法需要获取到的用户列表
     let reqList: string[] = []; // 需要远程请求的用户列表
     const localUserData: mapOriginDataResult[] = []; // 本地缓存下来对应需要使用的用户列表
+    // 覆盖模式
+    const coverMode = cover || data.length === 1;
     // 本地存储获取缓存的用户列表
     const localforage_userData =
       (await window.localforage.getItem("user_list")) || [];
@@ -90,6 +103,8 @@ export default class nostrToolsMixins extends Vue {
         if (!item) reqList.push(e as string);
       });
     } else reqList = authors as string[];
+    // 如果携带cover参数或者长度唯一的查询用户信息则表示这一条/批数据需要覆写
+    if (coverMode) reqList = data;
     if (reqList.length) {
       // 获取动态对应用户的信息
       userData = await nostrToolsModule.ns_send({
@@ -105,9 +120,18 @@ export default class nostrToolsMixins extends Vue {
           },
         ],
       });
-      const parse = JSON.parse(
-        JSON.stringify(localforage_userData.concat(userData))
-      );
+      let userList: mapOriginDataResult[] = localforage_userData;
+      if (coverMode) {
+        userData.forEach((newData: mapOriginDataResult) => {
+          userList.some((oldData: mapOriginDataResult, index: number) => {
+            if (newData.id === oldData.id) {
+              userList[index] = newData;
+              return true;
+            } else return false;
+          });
+        });
+      } else userList = userList.concat(userData);
+      const parse = JSON.parse(JSON.stringify(userList));
       window.localforage.setItem("user_list", parse);
     }
     return (userData || []).concat(localUserData);
@@ -170,6 +194,7 @@ export default class nostrToolsMixins extends Vue {
       }
     });
     // 获取转发的具体文章信息
+    if (!ids?.length) return;
     const forward: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: loginModule.readRelays,
       params: [
@@ -209,6 +234,7 @@ export default class nostrToolsMixins extends Vue {
   async _getLikes(activityData: mapOriginDataResult[]) {
     if (!loginModule.isLogin) return;
     const ids = activityData.map((e) => e.id);
+    if (!ids?.length) return;
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: loginModule.readRelays,
       params: [
@@ -249,5 +275,35 @@ export default class nostrToolsMixins extends Vue {
       });
       return { type: success, id: res[0].clinet_handleId };
     } else return { type: false };
+  }
+  // 设置用户是否关注
+  _setUserFollow(activityData: mapOriginDataResult[]) {
+    const { userFollow } = loginModule;
+    activityData.forEach((e) => {
+      if (userFollow[e.pubkey as string]) e.client_follow = true;
+      else e.client_follow = false;
+    });
+  }
+  // 关注/取消关注
+  async _setFollow(params: mapOriginDataResult) {
+    const { pubkey } = params;
+    const { userFollow } = loginModule;
+    const reqParams = userFollow || {};
+    if (!reqParams[pubkey as string])
+      reqParams[pubkey as string] = ["p", pubkey as string];
+    else delete reqParams[pubkey as string];
+    loginModule.setUserFollow(reqParams);
+    const tags: string[][] = Object.keys(reqParams).map((e) => reqParams[e]);
+    const { privateKey } = loginModule.userInfo;
+    const form = finishEvent(
+      {
+        kind: 3,
+        content: "",
+        created_at: ~~(Date.now() / 1000),
+        tags,
+      },
+      privateKey as string
+    );
+    await this._sendEvent(form);
   }
 }

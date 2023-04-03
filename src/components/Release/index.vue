@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 21:35:05
+ * @LastEditTime: 2023-04-02 14:59:02
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -22,7 +22,7 @@
         class="release-dialog-upload margin-bottom-10"
         :class="{ 'hide-upload': file?.length > 4 }"
         v-model:file-list="file"
-        :http-request="_upload"
+        :http-request="_uploadFile"
         list-type="picture-card"
         accept="video/*, image/*"
         :limit="5"
@@ -201,7 +201,7 @@ export default class Release extends mixins(ChatInputBoxMixins) {
     await this._sendEvent(form);
     this._reset();
   }
-  async _upload(params: UploadProps) {
+  async _uploadFile(params: UploadProps) {
     const { file } = params;
     const { name, type, uid } = file;
     let res: null | Record<string, string> = null;

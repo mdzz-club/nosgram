@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-24 17:04:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 16:51:20
+ * @LastEditTime: 2023-04-03 17:12:52
  * @FilePath: /nosgram/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -32,6 +32,7 @@ import Login from "@/components/Login/index.vue";
 import { loginModule } from "@/store/modules/login";
 import { wsModule } from "@/store/modules/ws";
 import relays from "@/common/js/relays";
+import type { UserInfoDetails } from "@/store/modules/login";
 
 @Options({
   components: {
@@ -57,7 +58,20 @@ export default class App extends mixins(NostrToolsMixins) {
     const isLogin = await window.localforage.getItem("is_login");
     if (isLogin) {
       const user_info = await window.localforage.getItem("user_info");
+      const { publicKey } = user_info;
       loginModule.login(user_info, false);
+      if (publicKey) this._getUserInfo(publicKey);
+    }
+  }
+  async _getUserInfo(author: string) {
+    loginModule.setUserInfoLoad(true);
+    const res = await this._getUser([author]);
+    loginModule.setUserInfoLoad(false);
+    if (res) {
+      loginModule.setUserInfo({
+        ...loginModule.userInfo,
+        details: res[0] as UserInfoDetails,
+      });
     }
   }
   get isShowLogin() {

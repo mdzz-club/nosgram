@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 19:32:45
+ * @LastEditTime: 2023-04-03 19:38:04
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -25,7 +25,7 @@
     />
     <additional-content :data="followerData" class="additional-content" />
   </section>
-  <details-dialog ref="details-dialog" />
+  <details-dialog :followFn="_resetFollowList" ref="details-dialog" />
   <release @success="_handleReleaseSuccess" ref="release-dialog" />
   <!-- 用于获取样式设置的高度，使用后隐藏 -->
   <div
@@ -68,6 +68,15 @@ export default class Home extends mixins(NostrToolsMixins) {
   mediaHeight = 0;
   followerData: mapOriginDataResult[] = [];
   pageUntil = ~~(Date.now() / 1000); // 上一次请求最后一条数据的时间
+  firstActivation = true;
+  // @Activated()
+  activated() {
+    if (this.firstActivation) {
+      this.firstActivation = false;
+      return;
+    }
+    this._resetFollowList();
+  }
   async mounted() {
     this._getMediaHeight();
 
@@ -108,6 +117,9 @@ export default class Home extends mixins(NostrToolsMixins) {
   _releaseDialogToggle(params: boolean | number) {
     (this.$refs["release-dialog"] as Release)._toggle(params);
   }
+  _resetFollowList() {
+    this._setUserFollow(this.listData);
+  }
   _getMediaHeight() {
     setTimeout(() => {
       const mediaRef = this.$refs.mediaRef as HTMLDivElement;
@@ -132,6 +144,7 @@ export default class Home extends mixins(NostrToolsMixins) {
         },
       ],
     });
+    this._setUserFollow(activityData);
     // 去重新旧获取的文章列表
     const newActivityData = deDuplication(
       this.listData,
@@ -152,9 +165,12 @@ export default class Home extends mixins(NostrToolsMixins) {
         ...e,
         client_mediaHeight: this.mediaHeight,
         client_fn_details: this._detailsDialogToggle,
+        client_fn_reset_follow: this._resetFollowList,
       }));
     this.pageUntil = this.listData[this.listData.length - 1]
       ?.created_at as number;
+
+    console.log("-----this.listData", this.listData);
   }
   async _getoOperation(author: string) {
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
@@ -242,10 +258,14 @@ export default class Home extends mixins(NostrToolsMixins) {
   padding: var(--content-container-padding);
 }
 
-.virtual-list {
-  overflow-y: scroll;
+:deep(.virtual-list) {
+  overflow-y: auto;
   height: 100%;
   width: 100%;
   padding: var(--content-container-padding);
+  .article,
+  .loading-container {
+    transform: var(--content-transform);
+  }
 }
 </style>

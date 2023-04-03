@@ -14,6 +14,10 @@
   filter: blur(5px);
 }
 
+.overflow-hidden {
+  overflow: hidden;
+}
+
 .cursor {
   &-pointer {
     cursor: pointer;
