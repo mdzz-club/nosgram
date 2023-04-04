@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-29 11:59:50
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 20:58:43
+ * @LastEditTime: 2023-04-03 21:10:56
  * @FilePath: /nosgram/src/views/User/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -29,6 +29,7 @@
             :http-request="(file: UploadProps) => _uploadFile(file, 'banner')"
             :before-upload="(file: UploadRawFile) => _handleBeforeUpload(file)"
           >
+            <!-- 点击任何图片类地址需要支持点击弹窗放大，支持拖拽 -->
             <img class="banner-img" :src="formBanner" alt="banner" />
             <el-icon class="banner-upload-icon" size="32">
               <icon-ion-settings-sharp />

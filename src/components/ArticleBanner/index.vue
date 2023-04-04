@@ -260,7 +260,7 @@ export default class ArticleBanner extends Vue {
       }
     }
     &-img {
-      height: 100px;
+      height: 150px;
     }
   }
 }

@@ -2,13 +2,13 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-24 17:04:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 17:12:52
+ * @LastEditTime: 2023-04-04 09:39:43
  * @FilePath: /nosgram/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <!-- <nav></nav> -->
   <div class="main-container">
+    <nav-bar />
     <sidebar />
     <main-content>
       <router-view v-slot="{ Component, route }" v-if="ws.length">
@@ -33,17 +33,23 @@ import { loginModule } from "@/store/modules/login";
 import { wsModule } from "@/store/modules/ws";
 import relays from "@/common/js/relays";
 import type { UserInfoDetails } from "@/store/modules/login";
+// import { isPhone } from "./common/js/common";
+import NavBar from "@/components/container/NavBar/index.vue";
 
 @Options({
   components: {
     Sidebar,
     Login,
+    NavBar,
   },
 })
 export default class App extends mixins(NostrToolsMixins) {
   get ws() {
     return wsModule.ws;
   }
+  // get showNavBar() {
+  //   return isPhone();
+  // }
   async mounted() {
     await this._initRelays();
     await this._initLogin();
@@ -106,6 +112,12 @@ export default class App extends mixins(NostrToolsMixins) {
   &-leave-to {
     transform: translateY(50px);
     opacity: 0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-container {
+    flex-direction: column;
   }
 }
 </style>

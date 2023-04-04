@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 16:00:16
+ * @LastEditTime: 2023-04-03 21:15:51
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -113,15 +113,19 @@ class NostrToolsModule extends VuexModule {
       clearTimeout(this.pools[eventId].ns_timeout[origin]);
     if (this.pools[eventId]?.ns_data?.[origin]) {
       this.pools[eventId].ns_data[origin].push(resData);
-    } else this.pools[eventId].ns_data[origin] = [resData];
+    } else {
+      this.pools?.[eventId] &&
+        (this.pools[eventId].ns_data[origin] = [resData]);
+    }
     // 若服务端返回标识EOSE，则视为该次请求的结果都返回完毕，取消订阅
     if ((params as Record<string, string>)?.data?.[0] === "EOSE") {
       this.ns_unsubscribe({ url: origin, closeId: eventId });
     }
-    this.pools[eventId].ns_timeout[origin] = window.setTimeout(
-      () => this.ns_unsubscribe({ url: origin, closeId: eventId }),
-      1000
-    );
+    this.pools?.[eventId] &&
+      (this.pools[eventId].ns_timeout[origin] = window.setTimeout(
+        () => this.ns_unsubscribe({ url: origin, closeId: eventId }),
+        1000
+      ));
   }
 
   /**
