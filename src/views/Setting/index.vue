@@ -2,14 +2,19 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 19:14:13
+ * @LastEditTime: 2023-04-05 16:46:48
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="setting-container">
     <div class="setting">
-      <h2 class="align-left margin-bottom-10">设置</h2>
+      <div class="setting-title">
+        <el-button class="back-button" link @click="$router.back()"
+          ><el-icon size="30"><icon-ion-arrow-back /></el-icon
+        ></el-button>
+        <h2 class="align-left">设置</h2>
+      </div>
       <div class="setting-left">
         <div class="list hover pointer">
           <div
@@ -280,6 +285,15 @@ export default class Setting extends mixins(NostrToolsMixins) {
     var(--content_width) + var(--content-right-spacing_width) +
       var(--content-additional_width)
   );
+  &-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    .back-button {
+      display: none;
+      color: rgb(var(--first-color));
+    }
+  }
   &-container {
     display: flex;
     justify-content: center;
@@ -380,6 +394,18 @@ export default class Setting extends mixins(NostrToolsMixins) {
       }
       & + .list-item {
         padding-top: 10px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .setting {
+    &-title {
+      width: 100%;
+      justify-content: space-between;
+      .back-button {
+        display: block;
       }
     }
   }
