@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-01 16:33:37
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-04 10:04:16
+ * @LastEditTime: 2023-04-04 19:33:23
  * @FilePath: /nosgram/src/common/js/nostr-tools/index.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -303,9 +303,6 @@ export const getAuthor = (
     } else {
       icon = "";
       author = getAuthorIdName((obj as Record<string, string>).pubkey);
-    }
-    if (key === "content") {
-      console.log("------content", icon);
     }
     result.icon = icon;
     result.author = author;

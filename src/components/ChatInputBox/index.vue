@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-14 15:22:13
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-26 21:35:01
+ * @LastEditTime: 2023-04-04 13:19:47
  * @FilePath: /nosgram/src/containers/ChatInputBox/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -311,7 +311,7 @@ export default class ChatInputBox extends Vue {
       display: flex;
       border: none;
       box-sizing: border-box;
-      overflow: scroll;
+      overflow: auto;
       word-break: break-all;
       overflow-wrap: break-word;
       padding: 5px;

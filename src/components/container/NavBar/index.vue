@@ -2,16 +2,16 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-04-04 09:02:15
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-04 10:42:08
+ * @LastEditTime: 2023-04-05 16:33:24
  * @FilePath: /nosgram/src/components/NavBar/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <nav class="navbar">
     <header>
-      <div>
+      <el-button link @click="$router.replace({ name: 'home' })">
         <h1 class="logo">nosgram</h1>
-      </div>
+      </el-button>
       <div class="display-flex align-items-center" @click="_handleClick">
         <avatar-component
           v-show="isLogin"
@@ -27,6 +27,18 @@
           <icon-majesticons-chevron-down-line />
         </el-icon>
       </div>
+      <div class="page-tab">
+        <ul>
+          <li
+            @click="_handleTabClick(tab)"
+            :class="{ active: tab.url === active }"
+            :key="index"
+            v-for="(tab, index) in pageTabs"
+          >
+            {{ tab.name }}
+          </li>
+        </ul>
+      </div>
     </header>
   </nav>
 </template>
@@ -35,8 +47,8 @@
 import { Options, Vue } from "vue-class-component";
 import { loginModule } from "@/store/modules/login";
 import AvatarComponent from "@/components/Base/Avatar/index.vue";
-import { getAuthor } from "@/common/js/nostr-tools/index";
-import { Author } from "@/common/js/nostr-tools/nostr-tools.d";
+// import { getAuthor } from "@/common/js/nostr-tools/index";
+// import { Author } from "@/common/js/nostr-tools/nostr-tools.d";
 
 @Options({
   components: {
@@ -44,6 +56,13 @@ import { Author } from "@/common/js/nostr-tools/nostr-tools.d";
   },
 })
 export default class NavBar extends Vue {
+  pageTabs = [
+    { name: "首页", url: "home" },
+    { name: "关注", url: "follow" },
+  ];
+  _handleTabClick(params: Record<string, string>) {
+    this.$router.push({ name: params.url });
+  }
   _handleClick() {
     if (!this.isLogin) {
       loginModule.toggle(true);
@@ -58,10 +77,32 @@ export default class NavBar extends Vue {
     const { userInfo } = loginModule;
     return userInfo.details;
   }
+  get active() {
+    return this.$route.name;
+  }
 }
 </script>
 
 <style lang="scss" scoped>
+.page-tab {
+  width: 100%;
+  padding-top: 10px;
+  ul {
+    display: flex;
+    li {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      & + li {
+        margin-left: 10px;
+      }
+      &.active {
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+  }
+}
+
 .navbar {
   display: var(--navbar-display);
   padding: var(--content-container-padding);
@@ -71,6 +112,7 @@ export default class NavBar extends Vue {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     width: 100%;
     h1 {
       font-size: 26px;

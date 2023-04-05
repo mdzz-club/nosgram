@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 19:38:04
+ * @LastEditTime: 2023-04-05 15:56:41
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -69,6 +69,10 @@ export default class Home extends mixins(NostrToolsMixins) {
   followerData: mapOriginDataResult[] = [];
   pageUntil = ~~(Date.now() / 1000); // 上一次请求最后一条数据的时间
   firstActivation = true;
+  get followPage() {
+    const { name } = this.$route;
+    return name === "follow";
+  }
   // @Activated()
   activated() {
     if (this.firstActivation) {
@@ -131,18 +135,18 @@ export default class Home extends mixins(NostrToolsMixins) {
     this._getData();
   }
   async _getActivity() {
+    const temp: Record<string, number | (number | string)[]> = {
+      kinds: [1],
+      until: this.pageUntil,
+      limit: 5,
+      // authors: this.followPage ? authors : [],
+    };
+    if (this.followPage)
+      temp.authors = Object.keys(loginModule.userFollow) || [];
     // 获取动态
     let activityData: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: loginModule.readRelays,
-      params: [
-        "REQ",
-        this.randomEventId("user-activity"),
-        {
-          kinds: [1],
-          until: this.pageUntil,
-          limit: 5,
-        },
-      ],
+      params: ["REQ", this.randomEventId("user-activity"), temp],
     });
     this._setUserFollow(activityData);
     // 去重新旧获取的文章列表
@@ -173,6 +177,7 @@ export default class Home extends mixins(NostrToolsMixins) {
     console.log("-----this.listData", this.listData);
   }
   async _getoOperation(author: string) {
+    if (!author?.length) return;
     const res: mapOriginDataResult[] = await nostrToolsModule.ns_send({
       url: loginModule.readRelays,
       params: [

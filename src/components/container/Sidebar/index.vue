@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-25 17:40:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-07 11:22:03
+ * @LastEditTime: 2023-04-05 15:56:54
  * @FilePath: /nosgram/src/components/container/Sidebar/Index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -18,7 +18,7 @@
       <el-icon size="18"><icon-ion-home-outline /></el-icon>
       <span>首页</span>
     </el-menu-item>
-    <el-menu-item index="2" @click="_to({ name: 'follower' })">
+    <el-menu-item index="2" @click="_to({ name: 'follow' })">
       <el-icon size="18"><icon-ion-heart-outline /></el-icon>
       <span>关注</span>
     </el-menu-item>

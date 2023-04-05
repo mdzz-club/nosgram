@@ -2,13 +2,13 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-24 17:04:18
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-04 09:39:43
+ * @LastEditTime: 2023-04-05 15:57:09
  * @FilePath: /nosgram/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="main-container">
-    <nav-bar />
+    <nav-bar v-show="isShowNavBar" />
     <sidebar />
     <main-content>
       <router-view v-slot="{ Component, route }" v-if="ws.length">
@@ -79,6 +79,10 @@ export default class App extends mixins(NostrToolsMixins) {
         details: res[0] as UserInfoDetails,
       });
     }
+  }
+  get isShowNavBar() {
+    const { name } = this.$route;
+    return name === "home" || name === "follow";
   }
   get isShowLogin() {
     return loginModule.show;
