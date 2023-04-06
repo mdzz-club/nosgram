@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-18 16:49:52
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-23 19:23:26
+ * @LastEditTime: 2023-04-06 21:18:55
  * @FilePath: /nosgram/src/components/Base/ButtonGroup/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -36,6 +36,11 @@
         v-else-if="item.type === 'collect'"
       /> </el-icon
   ></el-button>
+  <release
+    :forwardData="source"
+    @success="_handleReleaseSuccess"
+    ref="release-dialog"
+  />
 </template>
 
 <script lang="ts">
@@ -46,6 +51,7 @@ import Loading from "@/components/loading/index.vue";
 import { finishEvent } from "nostr-tools";
 import type { EventTemplate } from "nostr-tools";
 import { loginModule } from "@/store/modules/login";
+import Release from "@/components/Release/index.vue";
 
 interface Source {
   id: string;
@@ -57,6 +63,7 @@ interface Source {
 @Options({
   components: {
     Loading,
+    Release,
   },
 })
 export default class ButtonGroup extends mixins(NostrToolsMixins) {
@@ -68,6 +75,7 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
   @Prop({ default: "5" }) spacing!: string;
   @Prop({ default: {} }) source!: Source;
   @Prop({ default: true }) autoLike!: boolean;
+  show = false;
   like = false;
   timeout: Record<string, undefined | number> = {};
   loading: Record<string, boolean> = {};
@@ -108,6 +116,9 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
       privateKey as string
     );
   }
+  _handleReleaseSuccess(params: EventTemplate) {
+    this.$emit("forward-click", params);
+  }
   async handleLike(type: string) {
     const { id, pubkey, client_likeId, client_like } = this.source;
     this.source.client_like = !client_like;
@@ -132,6 +143,8 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
     // const { id, pubkey, client_like, client_likeId } = this.source;
     if (this.autoLike && (type === "like" || type === "good"))
       return this.handleLike(type);
+    else if (type === "forward")
+      return this.$refs["release-dialog"]._toggle(true);
     this.$emit(`${type}-click`);
   }
   get buttonsViewData() {

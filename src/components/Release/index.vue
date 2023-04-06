@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-02 14:59:02
+ * @LastEditTime: 2023-04-06 22:24:03
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -12,11 +12,14 @@
     close-on-click-modal
     close-on-press-escape
     align-center
+    @close="_reset"
     v-model="show"
     append-to-body
   >
     <div class="release-dialog-content">
-      <h3 class="release-dialog-title align-center">发布内容</h3>
+      <h3 class="release-dialog-title align-center">
+        {{ forwardData ? "转发" : "发布" }}内容
+      </h3>
       <el-upload
         v-show="media"
         class="release-dialog-upload margin-bottom-10"
@@ -76,6 +79,14 @@
           @interaction-input="_handleInteractionInput"
         />
       </div>
+      <div class="forward-container" v-if="forwardData">
+        <el-icon size="30"><icon-ion-return-down-forward /></el-icon>
+        <article-forward
+          :noClick="true"
+          class="forward-component"
+          :source="forwardDataSource"
+        />
+      </div>
       <div
         class="position-relative full-width display-flex justify-between align-items-center"
       >
@@ -87,9 +98,17 @@
             ><el-icon size="30"><icon-ion-md-photos /></el-icon
           ></el-button>
         </div>
-        <el-button type="primary" :disabled="_disabled" @click="_release"
-          >发布</el-button
-        >
+        <div>
+          <el-button
+            type="primary"
+            :disabled="_disabled"
+            @click="_toggle(false)"
+            >取消</el-button
+          >
+          <el-button type="primary" :disabled="_disabled" @click="_release"
+            >发布</el-button
+          >
+        </div>
       </div>
     </div>
   </el-dialog>
@@ -106,25 +125,39 @@
 
 <script lang="ts">
 import { Options, mixins } from "vue-class-component";
+import { Prop } from "vue-property-decorator";
 import ChatInputBoxMixins from "@/mixins/ChatInputBoxMixins";
 import type { UploadRawFile, UploadProps, UploadUserFile } from "element-plus";
 import { ElMessage } from "element-plus";
 import "element-plus/es/components/message/style/css";
 import ArticleVideo from "@/components/ArticleVideo/index.vue";
 import ArticlePhotos from "@/components/ArticlePhotos/index.vue";
+import ArticleForward from "@/components/ArticleForward/index.vue";
 import { loginModule } from "@/store/modules/login";
+import type { UserInfo } from "@/store/modules/login";
 import { finishEvent } from "nostr-tools";
 import { processingContent } from "@/common/js/nostr-tools/index";
 import { setInteraction } from "@/common/js/nostr-tools";
-import type { Client_tags } from "@/common/js/nostr-tools/nostr-tools.d";
+import type {
+  Client_tags,
+  Client_userInfo,
+  mapOriginDataResult,
+} from "@/common/js/nostr-tools/nostr-tools.d";
+
+interface Client_forward extends mapOriginDataResult {
+  client_forward?: mapOriginDataResult;
+  // client_userInfo?: UserInfo;
+}
 
 @Options({
   components: {
     ArticleVideo,
     ArticlePhotos,
+    ArticleForward,
   },
 })
 export default class Release extends mixins(ChatInputBoxMixins) {
+  @Prop({ default: null }) forwardData!: mapOriginDataResult;
   show = false;
   media = false;
   file: (UploadUserFile & { client_url: string; loading?: boolean })[] = [];
@@ -141,6 +174,10 @@ export default class Release extends mixins(ChatInputBoxMixins) {
     });
     return result;
   }
+  get forwardDataSource() {
+    const source = this.forwardData || {};
+    return { client_forward: source };
+  }
   _reset() {
     this.file = [];
     this.detailsVisible = false;
@@ -150,7 +187,7 @@ export default class Release extends mixins(ChatInputBoxMixins) {
   }
   _isNull() {
     const content = this.$refs["chat-input-box"].getContent();
-    return !this.file.length && !content.length;
+    return !this.file.length && !content.length && !this.forwardData;
   }
   _release() {
     this.$refs["chat-input-box"].submit();
@@ -159,11 +196,19 @@ export default class Release extends mixins(ChatInputBoxMixins) {
     params: Record<string, string | (string | Record<string, string>)[][]>
   ) {
     const { tags } = params;
-    if (this._isNull()) return ElMessage.warning("在输入框中说点什么吧...");
+    if (this._isNull()) return ElMessage.warning("说点什么吧...");
     const { privateKey } = loginModule.userInfo;
     const temp = this._getReleaseForm(params);
     if (this.file.length && this.media)
       temp.content += ` ${this.file.map((e) => e.client_url).join("/n")}`;
+    // 添加转发内容
+    if (this.forwardData) {
+      const { id } = this.forwardData;
+      const { tags } = temp;
+      const forwardIndex = tags.length;
+      temp.content += `#[${forwardIndex}]`;
+      temp.tags.push(["e", id]);
+    }
     const form = finishEvent(
       {
         kind: 1,
@@ -172,19 +217,24 @@ export default class Release extends mixins(ChatInputBoxMixins) {
       },
       privateKey as string
     );
-    this.show = false;
-    this.media = false;
     const emitForm = [
       {
         ...form,
         ...processingContent(temp.content),
         client_tags: {} as Record<string, Client_tags | string>,
+        client_userInfo: {},
       },
     ];
     setInteraction(emitForm); // 设置互动信息
+    // client_userInfo: loginModule.userInfo
+    const { details } = loginModule.userInfo || {};
+    if (details) emitForm[0].client_userInfo = details;
     // 返显前端at信息
     const item = emitForm[0].client_tags;
     const keys = Object.keys(item);
+    if (this.forwardData)
+      (emitForm[0].client_tags[keys[0]] as Client_forward).client_forward =
+        this.forwardData;
     keys.forEach((key) => {
       (tags as (string | Record<string, string>)[][]).some((element) => {
         if (element[1] === (item[key] as Client_tags).id && element[3]) {
@@ -197,9 +247,12 @@ export default class Release extends mixins(ChatInputBoxMixins) {
         } else return false;
       });
     });
+    console.log(emitForm[0]);
     this.$emit("success", emitForm[0]);
     await this._sendEvent(form);
     this._reset();
+    this.show = false;
+    this.media = false;
   }
   async _uploadFile(params: UploadProps) {
     const { file } = params;
@@ -272,6 +325,26 @@ export default class Release extends mixins(ChatInputBoxMixins) {
   }
 }
 </script>
+<style lang="scss" scoped>
+.forward {
+  &-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    .el-icon {
+      color: rgb(var(--second-color));
+      border: solid 2px rgb(var(--second-color));
+      border-radius: 100%;
+      width: 40px;
+      height: 40px;
+      margin-right: 20px;
+    }
+  }
+  &-component {
+    width: calc(100% - 60px);
+  }
+}
+</style>
 <style lang="scss">
 .release-dialog {
   .input-box,

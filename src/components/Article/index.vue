@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:57
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-31 11:16:19
+ * @LastEditTime: 2023-04-06 21:25:29
  * @FilePath: /nosgram/src/views/Home/components/Article/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -18,7 +18,8 @@
   <!-- 发布按钮类型 -->
   <article-release @open-release="_handleOpenRelease" v-if="isReleaseItem" />
   <article
-    v-if="isArticle && itemType === 'article'"
+    v-if="isArticle"
+    v-show="itemType === 'article'"
     class="article full-width"
   >
     <div class="article-top">
@@ -45,13 +46,18 @@
         <template #right>
           <button-group
             :source="source"
+            @forward-click="_handleForwardClick"
             @comment-click="_emit('details-dialog', source)"
           />
         </template>
       </author-info>
     </div>
   </article>
-  <article v-if="isArticle && itemType !== 'article'" class="article-media">
+  <article
+    v-if="isArticle"
+    v-show="itemType !== 'article'"
+    class="article-media"
+  >
     <article-media-abbreviation
       @media-click="(params: Source) => _emit('', params)"
       :data="source"
@@ -85,12 +91,14 @@ import { isPhone } from "@/common/js/common";
 import ArticleRelease from "@/components/Release/index.vue";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 import ArticleBanner from "@/components/ArticleBanner/index.vue";
+import type { EventTemplate } from "nostr-tools";
 
 interface Source extends mapOriginDataResult {
   client_itemType?: string;
   client_fn_details: (params: any) => void;
   client_fn_release_dialog: (params: boolean | number) => void;
   client_fn_reset_follow: () => void;
+  client_fn_release_success: (params: EventTemplate) => void;
   client_fn_catchEmit: (
     params: ComponentClick & Record<string, string>
   ) => void;
@@ -127,6 +135,9 @@ export default class Article extends mixins(NostrToolsMixins) {
   _follow(params: mapOriginDataResult) {
     this._setFollow(params);
     this.source.client_fn_reset_follow();
+  }
+  _handleForwardClick(params: EventTemplate) {
+    this.source.client_fn_release_success(params);
   }
   _emit(type: string, data: Source) {
     if (isPhone()) {

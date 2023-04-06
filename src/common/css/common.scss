@@ -22,6 +22,15 @@
   &-pointer {
     cursor: pointer;
   }
+  &-default {
+    cursor: default;
+  }
+  &-pointer-important {
+    cursor: pointer !important;
+  }
+  &-default-important {
+    cursor: default !important;
+  }
 }
 
 .position{

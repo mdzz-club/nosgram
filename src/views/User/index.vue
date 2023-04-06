@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-29 11:59:50
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 19:38:07
+ * @LastEditTime: 2023-04-06 13:10:34
  * @FilePath: /nosgram/src/views/User/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -190,12 +190,12 @@ export default class User extends mixins(NostrToolsMixins) {
     // if(!this.listData.length && !newActivityData.length)
     // 设置动态中用户的信息
     await this._setUser(activityData);
+    // 获取动态的对应的互动
+    await this._getInteraction(activityData);
     // 获取文章中转发的内容
     await this._getForward(activityData);
     // 获取文章的点赞信息，id
     await this._getLikes(activityData);
-    // 获取动态的对应的互动
-    await this._getInteraction(activityData);
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)
@@ -210,6 +210,8 @@ export default class User extends mixins(NostrToolsMixins) {
       this.noMore = true;
     this.pageUntil = this.listData[this.listData.length - 1]
       ?.created_at as number;
+
+    console.log("------user_getActivity", this.listData);
   }
   async _getData(id: string) {
     // 获取动态

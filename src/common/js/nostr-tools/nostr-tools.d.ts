@@ -28,7 +28,7 @@ export interface mapOriginDataResult {
   client_messageType?: string;
   clinet_api?: string;
   client_activity?: unknown;
-  client_userInfo?: Client_userInfo;
+  client_userInfo?: unknown;
   client_follow?: boolean;
   client_photos?: string[];
   client_videos?: string[];

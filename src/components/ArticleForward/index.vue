@@ -2,26 +2,32 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-28 18:39:26
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-16 21:52:12
+ * @LastEditTime: 2023-04-06 20:31:01
  * @FilePath: /nosgram/src/views/Home/components/ArticleForward/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
-  <div class="forward-container" title="查看原文章" @click="_handleClick">
+  <div
+    class="forward-container"
+    :class="{ 'cursor-default-important': noClick }"
+    title="查看原文章"
+    @click="_handleClick"
+  >
     <div class="video-container" v-if="videos?.length">
       <article-video :data="videos[0]" />
     </div>
     <article-photos v-if="photos?.length" :data="photos[0]" />
     <div class="author-info">
       <el-icon size="25"><icon-ion-ios-open /></el-icon>
-      <avatar
-        v-if="!author.icon"
-        :size="35"
-        :name="author.iconName"
-        :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
+      <author-info
+        :nameNoClick="noClick"
+        class="author-info-component"
+        :source="source?.client_forward"
+        :isShowCreateTime="false"
+        padding="0px"
+        nameWidth="150px"
+        nameColor="#fff"
       />
-      <img v-else :src="(author.icon as string)" alt="icon" />
-      <p class="font-size-18">{{ author.author }}</p>
     </div>
     <div
       class="introduction-container"
@@ -34,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import Avatar from "vue-boring-avatars";
+import AuthorInfo from "../Base/AuthorInfo/index.vue";
 import { Vue, Options } from "vue-class-component";
 import { Prop } from "vue-property-decorator";
 import type {
@@ -52,20 +58,22 @@ interface Source extends Client_tags {
 
 @Options({
   components: {
-    Avatar,
     ArticleHtml,
     ArticlePhotos,
     ArticleVideo,
+    AuthorInfo,
   },
 })
 export default class ArticleForward extends Vue {
   @Prop({ default: {} }) source!: Source;
   @Prop({ default: [] }) "open-class": string[];
+  @Prop({ default: false }) noClick!: boolean;
   hasText = false; // 判断转发的文章是否有内容
   _handleInnerText(params: string) {
     if (params && params.length) this.hasText = true;
   }
   _handleClick() {
+    if (this.noClick) return;
     const { id } = this.source;
     this.$router.push({
       name: "details",
@@ -140,17 +148,23 @@ export default class ArticleForward extends Vue {
       height: 60px;
       display: flex;
       align-items: center;
-      padding-left: 20px;
+      padding-left: 15px;
       background: rgb(0, 0, 0, 0.5);
       z-index: 3;
       .el-icon {
         color: white;
-        margin-right: 20px;
+        width: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
       }
-      p {
-        color: white;
-        padding-left: 10px;
+      &-component {
+        width: calc(100% - 45px);
       }
+      // p {
+      //   color: white;
+      //   padding-left: 10px;
+      // }
     }
   }
 }

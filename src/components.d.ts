@@ -65,6 +65,7 @@ declare module '@vue/runtime-core' {
     IconIonMdLogOut: typeof import('~icons/ion/md-log-out')['default']
     IconIonMdPhotos: typeof import('~icons/ion/md-photos')['default']
     IconIonQrCode: typeof import('~icons/ion/qr-code')['default']
+    IconIonReturnDownForward: typeof import('~icons/ion/return-down-forward')['default']
     IconIonServerOutline: typeof import('~icons/ion/server-outline')['default']
     IconIonSettingsOutline: typeof import('~icons/ion/settings-outline')['default']
     IconIonSettingsSharp: typeof import('~icons/ion/settings-sharp')['default']

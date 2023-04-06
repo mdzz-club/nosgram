@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-29 11:59:50
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 21:10:56
+ * @LastEditTime: 2023-04-05 19:05:48
  * @FilePath: /nosgram/src/views/User/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -50,8 +50,8 @@
           >
             <avatar-component
               class="avatar-upload-component"
-              :width="80"
-              :height="80"
+              :width="70"
+              :height="70"
               :source="formAvatar"
               :userInfoKey="form.picture ? 'content' : null"
             />
@@ -160,7 +160,6 @@ export default class EditUserInfo extends mixins(NostrToolsMixins) {
         label: "昵称",
         placeholder: `您的昵称，默认为您的公钥前+后四位（${idName}）`,
       },
-      about: { label: "关于我", placeholder: "写一句话认识我" },
       nip05: {
         label: "NIP-05",
         placeholder: "一个有效的NIP-05应为一个email格式",
@@ -170,6 +169,7 @@ export default class EditUserInfo extends mixins(NostrToolsMixins) {
         placeholder: "闪电地址或LNURL",
         valueKeys: ["lud16", "lud06"],
       },
+      about: { label: "关于我", placeholder: "写一句话认识我" },
       banner: { label: "banner", hide: true },
       picture: { label: "picture", hide: true },
     };

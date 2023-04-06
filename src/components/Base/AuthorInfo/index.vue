@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 10:34:08
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 21:04:36
+ * @LastEditTime: 2023-04-06 19:08:09
  * @FilePath: /nosgram/src/components/Base/AuthorInfo/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -22,13 +22,16 @@
       <div class="name">
         <div class="display-flex align-items-center">
           <el-button
+            :class="{ 'cursor-default-important': nameNoClick }"
             @click="toUserPage"
             link
-            class="margin-bottom-5-important"
             v-if="showName"
           >
             <span
               class="font-weight-600 font-size-16 default-font-color name-omit"
+              :style="`max-width: ${nameWidth};${
+                nameColor ? `color: ${nameColor}` : ''
+              }`"
               >{{ name || author.author }}</span
             >
           </el-button>
@@ -50,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Options } from "vue-class-component";
+import { Vue, Options, prop } from "vue-class-component";
 import { Prop } from "vue-property-decorator";
 import { getAuthor, resetTime } from "@/common/js/nostr-tools/index";
 import type { AuthorInfoSource } from "./AuthorInfo.d";
@@ -70,6 +73,9 @@ export default class AuthorInfo extends Vue {
   @Prop({ default: true }) isShowCreateTime!: boolean;
   @Prop({ default: "10px" }) padding!: string;
   @Prop({ default: "" }) name!: string;
+  @Prop({ default: "" }) nameColor!: string;
+  @Prop({ default: "80px" }) nameWidth!: string;
+  @Prop({ default: false }) nameNoClick!: boolean;
   @Prop({ default: true }) showName!: boolean;
   @Prop({ default: "client_userInfo" }) userInfoKey!: string;
   slot: Record<string, unknown> = {};
@@ -77,6 +83,7 @@ export default class AuthorInfo extends Vue {
     this.slot = this.$slots;
   }
   toUserPage() {
+    if (this.nameNoClick) return;
     this.$router.push({ name: "user", params: { id: this.source.pubkey } });
   }
   get author() {
@@ -90,11 +97,11 @@ export default class AuthorInfo extends Vue {
 
 <style lang="scss" scoped>
 .name-omit {
-  max-width: 80px;
   text-align: left;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: rgb(var(--first-color));
 }
 .author-info {
   &-container {

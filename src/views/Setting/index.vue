@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-05 16:46:48
+ * @LastEditTime: 2023-04-06 14:43:57
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -190,7 +190,7 @@ export default class Setting extends mixins(NostrToolsMixins) {
     return loginModule.isLogin;
   }
   get settingData() {
-    const result = [
+    const result: Record<string, string | Record<string, string>>[] = [
       {
         name: "收发信息服务器",
         alias: "中继列表",
@@ -199,6 +199,12 @@ export default class Setting extends mixins(NostrToolsMixins) {
       },
     ];
     if (loginModule.isLogin) {
+      result.unshift({
+        name: "个人中心",
+        key: "userInfo",
+        icon: "server",
+        params: { name: "user" },
+      });
       result.push({ name: "登出", key: "logout", icon: "logout", alias: "" });
     }
     return result;
@@ -250,11 +256,17 @@ export default class Setting extends mixins(NostrToolsMixins) {
     this.relays = relays;
     // to do 登出后需要重写写中继逻辑
   }
-  _handLeftClick(item: Record<string, string | undefined>) {
-    const { key } = item;
+  _handLeftClick(
+    item: Record<string, string | undefined | Record<string, string>>
+  ) {
+    const { key, params } = item;
     if (key === "logout") {
       this._logout();
       return;
+    } else if (key === "userInfo") {
+      const { name } = params as Record<string, string>;
+      const { userInfo } = loginModule;
+      this.$router.push({ name, params: { id: userInfo.publicKey } });
     } else if (key === "relays") {
       this.relays = JSON.parse(
         JSON.stringify(

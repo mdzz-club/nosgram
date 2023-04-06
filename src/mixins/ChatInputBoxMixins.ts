@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-24 15:22:31
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-27 12:30:59
+ * @LastEditTime: 2023-04-06 16:07:38
  * @FilePath: /nosgram/src/mixins/ChatInputBoxMixins.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -87,7 +87,7 @@ export default class ChatInputBoxMixins extends Vue {
             });
           result = temp;
         } else {
-          const res = await this._getAtUser(content);
+          const res = await this._getUser([content]);
           const temp: Record<string, string>[] = [];
           if (res?.length) {
             res.forEach((e: mapOriginDataResult) => {
