@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-07 11:18:04
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-29 11:26:58
+ * @LastEditTime: 2023-04-08 10:25:55
  * @FilePath: /nosgram/src/views/Details/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -106,6 +106,7 @@
           <div>
             <button-group
               ref="button-group"
+              @forward-click="_handleForwardClick"
               :source="viewData"
               size="25"
               :buttons="buttons"
@@ -171,6 +172,9 @@ import { AuthorInfo } from "@/components/Base/index";
 import { finishEvent } from "nostr-tools";
 import { loginModule } from "@/store/modules/login";
 import ChatInputBoxMixins from "@/mixins/ChatInputBoxMixins";
+// import type { EventTemplate } from "nostr-tools";
+import { ElMessage } from "element-plus";
+import "element-plus/es/components/message/style/css";
 
 interface Source extends mapOriginDataResult {
   created_at?: number;
@@ -208,9 +212,18 @@ export default class Details extends mixins(
   pageUntil = ~~(Date.now() / 1000);
   reply: Author | null = null;
   replyIndex: null | string = null;
+  articleAuthorInfo = null;
   @Watch("source")
   onSourceChanged() {
     this._getComment();
+  }
+  // params: EventTemplate
+  _handleForwardClick({ closeDialog }: { closeDialog: () => void }) {
+    ElMessage({
+      type: "success",
+      message: "转发成功",
+    });
+    closeDialog();
   }
   _follow() {
     this._setFollow(this.viewData);
@@ -221,8 +234,15 @@ export default class Details extends mixins(
     const result = getAuthor(params as Author).author as string;
     return result && result.length > 4 ? `${result.slice(0, 4)}...` : result;
   }
+  async _getAuthorInfo(id: string) {
+    const res = await this._getUser([id]);
+    console.log(res, "======het");
+    if (res) this.articleAuthorInfo = res[0];
+  }
   async mounted() {
     if (!this.isComponent) await this.getSource();
+    const { pubkey: userId } = this.viewData;
+    await this._getAuthorInfo(userId as string);
     await this.initLike();
     await this._getComment();
     setTimeout(() => this._setMediaHeight(), 0);
@@ -421,6 +441,7 @@ export default class Details extends mixins(
     } else {
       result = this.source;
     }
+    if (this.articleAuthorInfo) result.client_userInfo = this.articleAuthorInfo;
     return result;
   }
   get createdDate() {

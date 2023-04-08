@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-06 22:24:03
+ * @LastEditTime: 2023-04-08 09:51:13
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -134,13 +134,13 @@ import ArticleVideo from "@/components/ArticleVideo/index.vue";
 import ArticlePhotos from "@/components/ArticlePhotos/index.vue";
 import ArticleForward from "@/components/ArticleForward/index.vue";
 import { loginModule } from "@/store/modules/login";
-import type { UserInfo } from "@/store/modules/login";
+// import type { UserInfo } from "@/store/modules/login";
 import { finishEvent } from "nostr-tools";
 import { processingContent } from "@/common/js/nostr-tools/index";
 import { setInteraction } from "@/common/js/nostr-tools";
 import type {
   Client_tags,
-  Client_userInfo,
+  // Client_userInfo,
   mapOriginDataResult,
 } from "@/common/js/nostr-tools/nostr-tools.d";
 
@@ -247,7 +247,6 @@ export default class Release extends mixins(ChatInputBoxMixins) {
         } else return false;
       });
     });
-    console.log(emitForm[0]);
     this.$emit("success", emitForm[0]);
     await this._sendEvent(form);
     this._reset();

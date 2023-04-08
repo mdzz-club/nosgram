@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-18 16:49:52
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-06 21:18:55
+ * @LastEditTime: 2023-04-08 09:53:51
  * @FilePath: /nosgram/src/components/Base/ButtonGroup/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -116,8 +116,14 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
       privateKey as string
     );
   }
+  _closeReleaseDialog() {
+    this.$refs["release-dialog"]._toggle(false);
+  }
   _handleReleaseSuccess(params: EventTemplate) {
-    this.$emit("forward-click", params);
+    this.$emit("forward-click", {
+      ...params,
+      closeDialog: this._closeReleaseDialog,
+    });
   }
   async handleLike(type: string) {
     const { id, pubkey, client_likeId, client_like } = this.source;
