@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 22:29:44
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-06 19:54:48
+ * @LastEditTime: 2023-04-08 10:57:21
  * @FilePath: /nosgram/src/store/modules/ws-new.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -33,6 +33,12 @@ type ProcessingDataRes = Record<string, string | Record<string, string[][]>>;
 class NostrToolsModule extends VuexModule {
   pools: Record<string, Pool> = {};
   clearInterval: number | undefined = undefined; // 定时清理链接池资源
+
+  @Mutation
+  ns_resetPool() {
+    this.pools = {};
+    this.clearInterval = undefined;
+  }
 
   @Mutation
   ns_initPool(data: { eventId: string; api: string }) {

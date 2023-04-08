@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-06 14:43:57
+ * @LastEditTime: 2023-04-08 11:04:32
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -155,6 +155,7 @@ import type { Relay } from "@/common/js/relays/relays.d";
 import { finishEvent } from "nostr-tools";
 import NostrToolsMixins from "@/mixins/NostrToolsMixins";
 import relays from "@/common/js/relays";
+import loginMixins from "@/mixins/loginMixins";
 
 enum Create {
   button,
@@ -167,7 +168,7 @@ interface Form {
   read: boolean;
 }
 
-export default class Setting extends mixins(NostrToolsMixins) {
+export default class Setting extends mixins(NostrToolsMixins, loginMixins) {
   settingIndex = "";
   relays: Relay[] = [];
   create = Create.button;
@@ -252,7 +253,7 @@ export default class Setting extends mixins(NostrToolsMixins) {
       cancelButtonText: "取消",
       type: "warning",
     });
-    if (res) loginModule.logout();
+    if (res) this.logout();
     this.relays = relays;
     // to do 登出后需要重写写中继逻辑
   }

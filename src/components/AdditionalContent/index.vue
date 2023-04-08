@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-27 19:47:53
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-30 22:02:22
+ * @LastEditTime: 2023-04-08 11:06:44
  * @FilePath: /nosgram/src/views/Home/components/FollowerList/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -27,7 +27,7 @@
             <el-button
               link
               class="font-size-16 font-weight-600"
-              @click="loginModule.logout"
+              @click="logout"
             >
               登出
             </el-button>
@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Options, prop } from "vue-class-component";
+import { mixins, Options, prop } from "vue-class-component";
 import Avatar from "vue-boring-avatars";
 import type {
   Client_likes,
@@ -86,10 +86,12 @@ import AdditionalContentSkeleton from "../AdditionalContentSkeleton/index.vue";
 import { AuthorInfo } from "@/components/Base/index";
 import { loginModule } from "@/store/modules/login";
 import Loading from "../loading/index.vue";
+import loginMixins from "@/mixins/loginMixins";
+import { Prop } from "vue-property-decorator";
 
-class FollowerListProps {
-  data = prop<mapOriginDataResult[]>({ required: true, default: [] });
-}
+// class FollowerListProps {
+//   data = prop<mapOriginDataResult[]>({ required: true, default: [] });
+// }
 
 @Options({
   components: {
@@ -99,7 +101,8 @@ class FollowerListProps {
     Loading,
   },
 })
-export default class FollowerList extends Vue.with(FollowerListProps) {
+export default class FollowerList extends mixins(loginMixins) {
+  @Prop({ default: [], required: true }) data!: mapOriginDataResult[];
   loginModule = loginModule;
   get isLogin() {
     return false;
