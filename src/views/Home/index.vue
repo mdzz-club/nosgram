@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-06 21:06:57
+ * @LastEditTime: 2023-04-12 22:50:35
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -138,7 +138,7 @@ export default class Home extends mixins(NostrToolsMixins) {
     const temp: Record<string, number | (number | string)[]> = {
       kinds: [1],
       until: this.pageUntil,
-      limit: 5,
+      limit: this.followPage ? 15 : 5,
       // authors: this.followPage ? authors : [],
     };
     if (this.followPage)
@@ -148,20 +148,32 @@ export default class Home extends mixins(NostrToolsMixins) {
       url: loginModule.readRelays,
       params: ["REQ", this.randomEventId("user-activity"), temp],
     });
+    if (!this.listData.length && !activityData.length) {
+      // to do 处理请求数据为空情况
+    }
     this._setUserFollow(activityData);
     // 去重新旧获取的文章列表
     const newActivityData = deDuplication(
       this.listData,
       activityData as { id: string }[]
     );
-    // 设置动态中用户的信息
-    await this._setUser(activityData);
-    // 获取动态的对应的互动
-    await this._getInteraction(activityData);
-    // 获取文章中转发的内容
-    await this._getForward(activityData);
-    // 获取文章的点赞信息，id
-    await this._getLikes(activityData);
+    // // 设置动态中用户的信息
+    // await this._setUser(activityData);
+    // // 获取动态的对应的互动
+    // await this._getInteraction(activityData);
+    // // 获取文章中转发的内容
+    // await this._getForward(activityData);
+    // // 获取文章的点赞信息，id
+    // await this._getLikes(activityData);
+
+    const promise: Promise<unknown>[] = [
+      this._setUser(activityData), // 设置动态中用户的信息
+      this._getInteraction(activityData), // 获取动态的对应的互动
+      this._getForward(activityData), // 获取文章中转发的内容
+      this._getLikes(activityData), // 获取文章的点赞信息，id
+    ];
+    await Promise.allSettled(promise);
+
     // 合并显示动态列表
     this.listData = this.listData
       .concat(newActivityData)

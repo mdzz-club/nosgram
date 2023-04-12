@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-04 15:00:27
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-08 11:04:32
+ * @LastEditTime: 2023-04-12 22:37:30
  * @FilePath: /nosgram/src/views/Setting/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -24,6 +24,9 @@
             @click="_handLeftClick(item)"
           >
             <div>
+              <el-icon v-if="item.icon === 'userInfo'" size="20"
+                ><icon-majesticons-user-line
+              /></el-icon>
               <el-icon v-if="item.icon === 'logout'" size="20"
                 ><icon-ion-md-log-out
               /></el-icon>
@@ -203,7 +206,7 @@ export default class Setting extends mixins(NostrToolsMixins, loginMixins) {
       result.unshift({
         name: "个人中心",
         key: "userInfo",
-        icon: "server",
+        icon: "userInfo",
         params: { name: "user" },
       });
       result.push({ name: "登出", key: "logout", icon: "logout", alias: "" });

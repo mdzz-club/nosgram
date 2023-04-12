@@ -77,6 +77,7 @@ declare module '@vue/runtime-core' {
     IconMajesticonsThumbUpLine: typeof import('~icons/majesticons/thumb-up-line')['default']
     IconMajesticonsTrashLine: typeof import('~icons/majesticons/trash-line')['default']
     IconMajesticonsUserCircle: typeof import('~icons/majesticons/user-circle')['default']
+    IconMajesticonsUserLine: typeof import('~icons/majesticons/user-line')['default']
     IconMajesticonsZoomInLine: typeof import('~icons/majesticons/zoom-in-line')['default']
     Interaction: typeof import('./components/ChatInputBox/Interaction/index.vue')['default']
     Loading: typeof import('./components/loading/index.vue')['default']
