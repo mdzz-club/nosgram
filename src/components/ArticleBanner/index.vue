@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-03 21:02:44
+ * @LastEditTime: 2023-04-15 22:13:02
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -11,7 +11,9 @@
     <el-button class="back-button" link @click="$router.back()"
       ><el-icon size="30"><icon-ion-arrow-back /></el-icon
     ></el-button>
-    <img class="banner-img" :src="banner" alt="banner" />
+    <viewer :options="options" :images="banner">
+      <img class="banner-img" :src="banner" alt="banner" />
+    </viewer>
     <div class="user-info">
       <avatar-component
         class="avatar"
@@ -54,6 +56,8 @@ import { mapOriginDataResult } from "@/common/js/nostr-tools/nostr-tools.d";
 import { loginModule } from "@/store/modules/login";
 import AvatarComponent from "@/components/Base/Avatar/index.vue";
 import { isPhone } from "@/common/js/common";
+import "viewerjs/dist/viewer.css";
+import { component as Viewer } from "v-viewer";
 
 interface Source {
   userInfo: mapOriginDataResult;
@@ -64,6 +68,7 @@ interface Source {
 @Options({
   components: {
     AvatarComponent,
+    Viewer,
   },
 })
 export default class ArticleBanner extends Vue {
@@ -77,6 +82,11 @@ export default class ArticleBanner extends Vue {
   tabList!: Record<string, string>[];
   @Prop({ default: 0 }) defaultTab!: number;
   tab = "";
+  options = {
+    toolbar: false,
+    navbar: false,
+    zIndex: 2040,
+  };
   mounted() {
     this.tab = this.tabList[this.defaultTab].name;
   }

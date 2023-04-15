@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-04 13:23:11
+ * @LastEditTime: 2023-04-15 22:11:16
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -15,12 +15,13 @@
       :name="author.iconName"
       :color="['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']"
     />
-    <img
-      v-else
-      :style="`width: ${width}px;height: ${height}px`"
-      :src="(author.icon as string)"
-      alt="icon"
-    />
+    <viewer :options="options" v-else :images="author.icon">
+      <img
+        :style="`width: ${width}px;height: ${height}px`"
+        :src="(author.icon as string)"
+        alt="icon"
+      />
+    </viewer>
     <slot />
   </div>
 </template>
@@ -32,10 +33,13 @@ import { getAuthor } from "@/common/js/nostr-tools/index";
 import type { AvatarSource } from "./Avatar.d";
 import Avatar from "vue-boring-avatars";
 import { Author } from "@/common/js/nostr-tools/nostr-tools.d";
+import "viewerjs/dist/viewer.css";
+import { component as Viewer } from "v-viewer";
 
 @Options({
   components: {
     Avatar,
+    Viewer,
   },
 })
 export default class AvatarComponent extends Vue {
@@ -44,6 +48,11 @@ export default class AvatarComponent extends Vue {
   @Prop({ default: 35 }) height!: number | string;
   @Prop({ default: "middle" }) verticalAlign!: string;
   @Prop({ default: "client_userInfo" }) userInfoKey!: string;
+  options = {
+    toolbar: false,
+    navbar: false,
+    zIndex: 2040,
+  };
   get author() {
     return getAuthor(this.source as Author, this.userInfoKey);
   }

@@ -23,6 +23,7 @@
     "qrcode.vue": "^3.3.4",
     "register-service-worker": "^1.7.2",
     "unplugin-icons": "^0.15.3",
+    "v-viewer": "^3.0.11",
     "videojs": "^1.0.0",
     "vue": "^3.2.13",
     "vue-boring-avatars": "^1.3.0",

@@ -2,18 +2,19 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-28 18:39:47
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-03-30 15:47:04
+ * @LastEditTime: 2023-04-15 22:06:38
  * @FilePath: /nosgram/src/views/Home/components/ArticlePhotos/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <template>
   <div class="img-container">
-    <img
-      v-if="!damaged && imgUrl"
-      :style="`width: ${imgWidth};height: ${imgHeight};object-fit: ${objectFit}`"
-      :src="imgUrl"
-      alt="img"
-    />
+    <viewer :options="options" v-if="!damaged && imgUrl" :images="imgUrl">
+      <img
+        :style="`width: ${imgWidth};height: ${imgHeight};object-fit: ${objectFit}`"
+        :src="imgUrl"
+        alt="img"
+      />
+    </viewer>
     <el-skeleton class="full-height" v-else>
       <template #template>
         <el-skeleton-item class="full-height-important" variant="image" />
@@ -23,8 +24,10 @@
 </template>
 
 <script lang="ts">
-import { Vue, prop } from "vue-class-component";
+import { Vue, prop, Options } from "vue-class-component";
 import { Watch } from "vue-property-decorator";
+import "viewerjs/dist/viewer.css";
+import { component as Viewer } from "v-viewer";
 
 class ArticlePhotosProps {
   data = prop<string>({ required: true, default: "" });
@@ -41,9 +44,19 @@ class ArticlePhotosProps {
 //     },
 //   },
 // })
+@Options({
+  components: {
+    Viewer,
+  },
+})
 export default class ArticlePhotos extends Vue.with(ArticlePhotosProps) {
   damaged = true;
   imgUrl = "";
+  options = {
+    toolbar: false,
+    navbar: false,
+    zIndex: 2040,
+  };
   @Watch("data")
   onDataChanged() {
     this.damaged = false;
