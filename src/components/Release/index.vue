@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-17 09:39:06
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-15 23:11:14
+ * @LastEditTime: 2023-04-19 22:55:49
  * @FilePath: /nosgram/src/components/Base/avatar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -113,14 +113,21 @@
     </div>
   </el-dialog>
 
-  <!-- <el-dialog v-model="detailsVisible" align-center>
+  <el-dialog
+    v-model="detailsVisible"
+    align-center
+    class="release-dialog-details-container"
+  >
     <div
       class="display-flex justify-center align-items-center release-dialog-details"
     >
-      <article-video v-if="detailsType === 'video'" :data="detailsUrl" />
-      <article-photos v-if="detailsType === 'photo'" :data="detailsUrl" />
+      <article-video
+        v-if="detailsType === 'video' && detailsVisible"
+        :data="detailsUrl"
+      />
+      <!-- <article-photos v-if="detailsType === 'photo'" :data="detailsUrl" /> -->
     </div>
-  </el-dialog> -->
+  </el-dialog>
 </template>
 
 <script lang="ts">
@@ -163,9 +170,9 @@ export default class Release extends mixins(ChatInputBoxMixins) {
   show = false;
   media = false;
   file: (UploadUserFile & { client_url: string; loading?: boolean })[] = [];
-  // detailsVisible = false;
-  // detailsUrl = "";
-  // detailsType = "";
+  detailsVisible = false;
+  detailsUrl = "";
+  detailsType = "";
   get _disabled() {
     let result = false;
     this.file.some((e) => {
@@ -182,9 +189,9 @@ export default class Release extends mixins(ChatInputBoxMixins) {
   }
   _reset() {
     this.file = [];
-    // this.detailsVisible = false;
-    // this.detailsUrl = "";
-    // this.detailsType = "";
+    this.detailsVisible = false;
+    this.detailsUrl = "";
+    this.detailsType = "";
     this.$refs["chat-input-box"]._clear();
   }
   _isNull() {
@@ -292,20 +299,22 @@ export default class Release extends mixins(ChatInputBoxMixins) {
     }
   }
   _handlePictureCardPreview(file: Record<string, string>) {
-    // if (/mp4|avi|mov|wmv|webm/.test(file.name)) this.detailsType = "video";
-    // else if (/jpeg|png|jpg|webp|gif/.test(file.name))
-    //   this.detailsType = "photo";
-    // this.detailsVisible = true;
-    // this.detailsUrl = file.url;
-    viewerApi({
-      images: [file.url],
-      options: {
-        toolbar: false,
-        navbar: false,
-        zIndex: 2100,
-      },
-    });
-    // to do需要单独做视频的预览
+    if (/mp4|avi|mov|wmv|webm/.test(file.name)) this.detailsType = "video";
+    else if (/jpeg|png|jpg|webp|gif/.test(file.name))
+      this.detailsType = "photo";
+    if (this.detailsType === "video") {
+      this.detailsVisible = true;
+      this.detailsUrl = file.url;
+    } else {
+      viewerApi({
+        images: [file.url],
+        options: {
+          toolbar: false,
+          navbar: false,
+          zIndex: 2100,
+        },
+      });
+    }
   }
   _handleRemove(file: UploadRawFile) {
     const { uid } = file;
@@ -372,9 +381,9 @@ export default class Release extends mixins(ChatInputBoxMixins) {
       }
     }
   }
-  // &-details {
-  //   height: var(--release-dialog-details-height);
-  // }
+  &-details {
+    height: var(--release-dialog-details-height);
+  }
   &-upload {
     --release-dialog-upload-picture-card-size: 110px;
     .el-upload-list__item,
@@ -425,6 +434,14 @@ export default class Release extends mixins(ChatInputBoxMixins) {
   .release-dialog {
     .chat-input-box {
       height: 100px;
+    }
+    &-details {
+      &-container {
+        width: 90%;
+        .el-dialog__body {
+          padding: 20px 15px 15px 15px;
+        }
+      }
     }
     &-upload {
       --release-dialog-upload-picture-card-size: 80px;
