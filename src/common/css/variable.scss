@@ -19,10 +19,10 @@ $phone-media-screen: 480px;
   --first-font-size: 15px;
   --second-font-size: 12px;
 
-  --navbar-display: none;
+  // --navbar-display: none;
 
-  --sidebar-expansion_width: 210px;
-  --sidebar-fold_width: 80px;
+  // --sidebar-expansion_width: 210px;
+  // --sidebar-fold_width: 80px;
 
   --content_width: 480px;
   --content-additional_width: 400px;
@@ -40,7 +40,7 @@ $phone-media-screen: 480px;
   --article-box_shadow-clor: rgba(0, 0, 0, 0.1);
   --article-type-media-size: 480px;
 
-  --content-container-padding: 0;
+  --content-container-padding: 10px;
   --content-border: solid 1px rgb(var(--border-color));
   --content-transform: none;
   --content-additional_display: none;
@@ -77,8 +77,8 @@ $phone-media-screen: 480px;
 
 @media screen and (max-width: $phone-media-screen) {
   :root {
-    --navbar-display: flex;
-    --content-container-padding: 10px;
+    // --navbar-display: flex;
+    // --content-container-padding: 10px;
     --content_width: 100%;
     --release-dialog-details-height: 90%;
   }
