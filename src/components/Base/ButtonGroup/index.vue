@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-03-18 16:49:52
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-08 09:53:51
+ * @LastEditTime: 2023-05-07 20:38:19
  * @FilePath: /nosgram/src/components/Base/ButtonGroup/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -32,10 +32,10 @@
       />
       <icon-ion-chatbubble-ellipses-outline v-if="item.type === 'comment'" />
       <icon-ion-arrow-redo-outline v-else-if="item.type === 'forward'" />
-      <icon-ion-duplicate-outline
-        v-else-if="item.type === 'collect'"
-      /> </el-icon
-  ></el-button>
+      <icon-ion-duplicate-outline v-else-if="item.type === 'collect'" />
+      <icon-majesticons-lightning-bolt-line v-if="item.type === 'lightning'" />
+    </el-icon>
+  </el-button>
   <release
     :forwardData="source"
     @success="_handleReleaseSuccess"
@@ -52,6 +52,8 @@ import { finishEvent } from "nostr-tools";
 import type { EventTemplate } from "nostr-tools";
 import { loginModule } from "@/store/modules/login";
 import Release from "@/components/Release/index.vue";
+import { ElMessage } from "element-plus";
+import "element-plus/es/components/message/style/css";
 
 interface Source {
   id: string;
@@ -67,7 +69,7 @@ interface Source {
   },
 })
 export default class ButtonGroup extends mixins(NostrToolsMixins) {
-  // buttons：comment/like/good/forward/collect
+  // buttons：comment/like/good/forward/collect/lightning
   @Prop({ default: ["comment", "like", "forward"] }) buttons!:
     | string[]
     | Record<string, string | boolean>[];
@@ -116,6 +118,12 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
       privateKey as string
     );
   }
+  _lightningClick() {
+    ElMessage({
+      type: "info",
+      message: "功能即将上线...",
+    });
+  }
   _closeReleaseDialog() {
     this.$refs["release-dialog"]._toggle(false);
   }
@@ -140,7 +148,8 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
       (type === "like" ||
         type === "good" ||
         type === "forward" ||
-        type === "collect") &&
+        type === "collect" ||
+        type === "lightning") &&
       !loginModule.isLogin
     ) {
       loginModule.toggle();
@@ -151,6 +160,7 @@ export default class ButtonGroup extends mixins(NostrToolsMixins) {
       return this.handleLike(type);
     else if (type === "forward")
       return this.$refs["release-dialog"]._toggle(true);
+    else if (type === "lightning") return this._lightningClick();
     this.$emit(`${type}-click`);
   }
   get buttonsViewData() {

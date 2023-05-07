@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-02-26 14:22:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-24 22:40:59
+ * @LastEditTime: 2023-05-07 20:06:03
  * @FilePath: /nosgram/src/views/Home/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -266,7 +266,7 @@ export default class Home extends mixins(NostrToolsMixins) {
   right: 0;
   top: 0;
   margin: var(--content-container-padding) auto auto auto;
-  transform: translateX(calc(50% + var(--content-right-spacing_width) / 2));
+  transform: translateX(calc(50% + var(--content-right-spacing_width)));
 }
 
 .article-skeleton-container {

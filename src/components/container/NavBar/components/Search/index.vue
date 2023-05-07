@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-04-29 19:55:41
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-04-30 22:13:06
+ * @LastEditTime: 2023-05-07 20:18:56
  * @FilePath: /nosgram/src/components/container/NavBar/components/Search/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -38,7 +38,8 @@ enum ModeEnum {
 }
 
 export default class Search extends Vue {
-  @Prop({ default: "请输入" }) placeholder!: string;
+  // @Prop({ default: "请输入" }) placeholder!: string;
+  @Prop({ default: "功能即将上线..." }) placeholder!: string;
   mode = ModeEnum.button;
   _switchMode(type: number) {
     this.mode = type;

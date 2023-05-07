@@ -2,7 +2,7 @@
  * @Author: un-hum 383418809@qq.com
  * @Date: 2023-04-22 21:58:32
  * @LastEditors: un-hum 383418809@qq.com
- * @LastEditTime: 2023-05-05 22:19:13
+ * @LastEditTime: 2023-05-07 20:20:59
  * @FilePath: /nosgram/src/components/container/NavBar/components/Pc/index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -16,7 +16,13 @@
         <el-button circle color="rgb(40, 40, 40)">
           <el-icon color="#fff" size="14"><icon-ion-home-sharp /></el-icon>
         </el-button>
-        <el-button link v-if="isLogin"> 我关注的 </el-button>
+        <el-button
+          link
+          v-if="isLogin"
+          @click="$router.replace({ name: 'follow' })"
+        >
+          我关注的
+        </el-button>
       </div>
       <div class="display-flex align-items-center">
         <Search class="margin-right-12" />
@@ -123,10 +129,7 @@ export default class PcNavbar extends mixins(loginMixins) {
 }
 .navbar-container {
   height: 100%;
-  width: calc(
-    var(--content_width) + var(--content-additional_width) +
-      var(--content-right-spacing_width)
-  );
+  width: 80%;
   display: flex;
   align-items: center;
   justify-content: space-between;

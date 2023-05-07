@@ -79,6 +79,7 @@ declare module '@vue/runtime-core' {
     IconMajesticonsChevronDownLine: typeof import('~icons/majesticons/chevron-down-line')['default']
     IconMajesticonsEditPen4: typeof import('~icons/majesticons/edit-pen4')['default']
     IconMajesticonsHashtagLine: typeof import('~icons/majesticons/hashtag-line')['default']
+    IconMajesticonsLightningBoltLine: typeof import('~icons/majesticons/lightning-bolt-line')['default']
     IconMajesticonsThumbUp: typeof import('~icons/majesticons/thumb-up')['default']
     IconMajesticonsThumbUpLine: typeof import('~icons/majesticons/thumb-up-line')['default']
     IconMajesticonsTrashLine: typeof import('~icons/majesticons/trash-line')['default']
